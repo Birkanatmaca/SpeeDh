@@ -1,0 +1,22 @@
+@import '../../styles/variables';
+
+.custom-input {
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius;
+    font-size: 16px;
+    box-sizing: border-box;
+
+
+    background-color: $background-color;
+
+    color: $text-color;
+
+    &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 2px rgba($primary-color, 0.2);
+    }
+}

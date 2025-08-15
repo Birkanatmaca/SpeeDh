@@ -1,0 +1,46 @@
+@import '../styles/variables';
+
+.auth-container {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+}
+
+.auth-form {
+    background-color: $form-background;
+    padding: 2.5rem;
+    border-radius: $border-radius;
+    box-shadow: $box-shadow;
+    text-align: center;
+
+    h2 {
+        color: $text-color;
+        margin-bottom: 2rem;
+        font-weight: 600;
+    }
+
+    .success-message {
+        color: green;
+        margin-top: 1rem;
+    }
+
+    .error-message {
+        color: $accent-color;
+        margin-top: 1rem;
+    }
+
+    .form-footer {
+        margin-top: 1.5rem;
+        color: $text-light;
+
+        a {
+            color: $primary-color;
+            text-decoration: none;
+            font-weight: 600;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+}

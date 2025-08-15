@@ -1,0 +1,24 @@
+@import '../../styles/variables';
+
+.custom-button {
+    width: 100%;
+    padding: 12px 15px;
+    border: none;
+    border-radius: $border-radius;
+    background: linear-gradient(45deg, $secondary-color, $primary-color);
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        box-shadow: 0 6px 15px rgba($primary-color, 0.3);
+        transform: translateY(-2px);
+    }
+
+    &:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+}
