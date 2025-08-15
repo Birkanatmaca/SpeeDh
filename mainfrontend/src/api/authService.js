@@ -25,3 +25,17 @@ export const verifyEmail = (email, code) => {
     });
 };
 
+export const transcribeAudio = (audioFile) => {
+    const formData = new FormData();
+    formData.append('audio', audioFile);
+
+    // Token'ı localStorage'dan oku
+    const token = localStorage.getItem('authToken');
+
+    return axios.post(`${API_BASE_URL}/transcribe`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}` // Okunan token'ı kullan
+        }
+    });
+};

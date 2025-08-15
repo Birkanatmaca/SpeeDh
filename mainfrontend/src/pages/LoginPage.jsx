@@ -27,6 +27,7 @@ const LoginPage = () => {
         setLoading(true); // Butonu devre dışı bırakıp "Giriş Yapılıyor..." yazısını göstermek için
         try {
             const response = await login(formData.email, formData.password);
+            localStorage.setItem('authToken', response.data.token);
 
             // --- BAŞARILI GİRİŞ SONRASI ---
             console.log('Giriş Başarılı! Token:', response.data.token);

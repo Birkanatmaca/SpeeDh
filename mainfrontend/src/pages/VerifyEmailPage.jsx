@@ -33,6 +33,7 @@ const VerifyEmailPage = () => {
         setLoading(true);
         try {
             const response = await verifyEmail(email, code);
+            localStorage.setItem('authToken', response.data.token);
             console.log('Hesap doğrulandı! Token:', response.data.token);
             alert('Hesabınız başarıyla doğrulandı! Giriş yaptınız.');
 
