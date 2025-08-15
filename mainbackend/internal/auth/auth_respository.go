@@ -10,6 +10,8 @@ import (
 type UserRepository interface {
 	CreateUser(user *model.User) error
 	GetUserByEmail(email string) (*model.User, error)
+	// YENİ EKLENDİ: Doğrulama koduna göre kullanıcıyı getirecek fonksiyon.
+	GetUserByVerificationCode(code string) (*model.User, error)
 	ActivateUser(user *model.User) error
 	UpdatePassword(userID uint, newPasswordHash string) error
 	SetVerificationCode(user *model.User) error
@@ -36,6 +38,14 @@ func (r *userRepository) GetUserByEmail(email string) (*model.User, error) {
 	return &user, result.Error
 }
 
+// YENİ EKLENDİ: Fonksiyonun kendisi.
+func (r *userRepository) GetUserByVerificationCode(code string) (*model.User, error) {
+	var user model.User
+	// verification_code sütununa göre kullanıcıyı arar.
+	result := r.db.Where("verification_code = ?", code).First(&user)
+	return &user, result.Error
+}
+
 func (r *userRepository) ActivateUser(user *model.User) error {
 	return r.db.Model(user).Updates(map[string]interface{}{
 		"is_active":            true,
@@ -47,8 +57,8 @@ func (r *userRepository) ActivateUser(user *model.User) error {
 func (r *userRepository) UpdatePassword(userID uint, newPasswordHash string) error {
 	return r.db.Model(&model.User{}).Where("id = ?", userID).Updates(map[string]interface{}{
 		"password":             newPasswordHash,
-		"verification_code":    nil,
-		"verification_expires": nil,
+		"verification_code":    nil, // Kod kullanıldıktan sonra temizlenir.
+		"verification_expires": nil, // Süresi de temizlenir.
 	}).Error
 }
 

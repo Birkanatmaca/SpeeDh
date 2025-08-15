@@ -1,58 +1,64 @@
 package main
 
 import (
-	"github.com/gin-contrib/cors"
 	"log"
 	"mainbackend/internal/auth"
 	"mainbackend/internal/platform/database"
 	"mainbackend/internal/platform/email"
+	"mainbackend/internal/transcription" // YENİ EKLENDİ: Transcription paketi
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Load the .env file
+	// .env dosyasını yükle
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("Warning: .env file not found.")
+		log.Println("Uyarı: .env dosyası bulunamadı.")
 	}
 
-	// Initialize the database connection
+	// Veritabanı bağlantısını başlat
 	db := database.ConnectDB()
 
-	// Create the email service instance
+	// E-posta servisini oluştur
 	mailer := email.NewGmailMailer()
 
-	// Create the instances of our layers, passing the dependencies
+	// Katmanları (repository, service, handler) oluştur
 	userRepository := auth.NewUserRepository(db)
-
-	// CORRECTION: We pass the 'mailer' instance to the auth service here.
 	authService := auth.NewAuthService(userRepository, mailer, "a-very-secret-key")
-
 	authHandler := auth.NewAuthHandler(authService)
 
-	// Set up the Gin router and define the routes
+	// Gin router'ı kur
 	router := gin.Default()
 
+	// CORS ayarları
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://localhost:5173"} // Vite'ın verdiği adresi buraya yaz.
+	config.AllowOrigins = []string{"http://localhost:5173"} // Frontend adresiniz
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	router.Use(cors.New(config))
 
+	// API rotalarını tanımla
 	api := router.Group("/api/v1")
 	{
 		authRoutes := api.Group("/auth")
 		{
 			authRoutes.POST("/register", authHandler.Register)
-			authRoutes.POST("/verify-email", authHandler.VerifyEmail) // YENİ ROTA
+			authRoutes.POST("/verify-email", authHandler.VerifyEmail)
 			authRoutes.POST("/resend-code", authHandler.ResendVerificationCode)
 			authRoutes.POST("/login", authHandler.Login)
 			authRoutes.POST("/forgot-password", authHandler.ForgotPassword)
-			authRoutes.GET("/confirm-reset", authHandler.ConfirmPasswordReset) // DİKKAT: Metot GET OLDU
+			// DÜZELTİLDİ: Şifre sıfırlama rotası POST metodu ve doğru handler ile değiştirildi.
+			authRoutes.POST("/reset-password", authHandler.ResetPassword)
 		}
+
+		// YENİ EKLENDİ: Ses metne çevirme (transcription) için yeni endpoint
+		api.POST("/transcribe", transcription.TranscribeHandler)
 	}
 
-	// Start the server
+	// Sunucuyu başlat
+	log.Println("Sunucu http://localhost:8080 adresinde başlatılıyor...")
 	router.Run(":8080")
 }

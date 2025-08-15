@@ -29,8 +29,8 @@ type AuthService interface {
 	VerifyEmail(email, code string) (string, error)
 	LoginUser(email, password string) (string, error)
 	ResendVerificationCode(email string) error
-	ForgotPassword(email string) error
-	ResetPassword(email, code, newPassword string) error
+	RequestPasswordReset(email string) error      // Düzeltme: Fonksiyon adı daha açıklayıcı oldu.
+	ResetPassword(code, newPassword string) error // Düzeltme: E-posta parametresi kaldırıldı.
 }
 
 type authService struct {
@@ -178,7 +178,6 @@ func (s *authService) RequestPasswordReset(email string) error {
 		return nil // Güvenlik
 	}
 
-	// Bu metot, link yerine 6 haneli kod gönderecek şekilde yeniden tasarlandı.
 	code, _ := generateVerificationCode()
 	expires := time.Now().Add(15 * time.Minute)
 	user.VerificationCode = &code
@@ -193,14 +192,18 @@ func (s *authService) RequestPasswordReset(email string) error {
 	return s.mailer.Send(user.Email, subject, body)
 }
 
-func (s *authService) ConfirmPasswordReset(tokenString, newPassword string) error {
-	// Bu metot, 6 haneli kod kullanacak şekilde yeniden tasarlandı.
-	user, err := s.userRepo.GetUserByVerificationCode(tokenString) // 'tokenString' artık 6 haneli kod
-	if err != nil {
-		return errors.New("geçersiz sıfırlama kodu")
+// DÜZELTİLDİ: Bu fonksiyon artık e-posta yerine doğrudan kodu kullanıyor.
+func (s *authService) ResetPassword(code, newPassword string) error {
+	if len(newPassword) < 8 {
+		return errors.New("yeni şifre en az 8 karakter olmalıdır")
 	}
 
-	if time.Now().After(*user.VerificationExpires) {
+	user, err := s.userRepo.GetUserByVerificationCode(code)
+	if err != nil {
+		return errors.New("geçersiz veya kullanılmış sıfırlama kodu")
+	}
+
+	if user.VerificationExpires == nil || time.Now().After(*user.VerificationExpires) {
 		return errors.New("sıfırlama kodunun süresi dolmuş")
 	}
 

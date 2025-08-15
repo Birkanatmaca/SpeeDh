@@ -120,7 +120,8 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	err := h.authService.ConfirmPasswordReset(req.Code, req.NewPassword)
+	// DÜZELTME: Çağrılan fonksiyon adı AuthService interface'i ile uyumlu hale getirildi.
+	err := h.authService.ResetPassword(req.Code, req.NewPassword)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
