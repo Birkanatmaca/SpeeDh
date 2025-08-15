@@ -40,7 +40,7 @@ func ConnectDB() *gorm.DB {
 
 	// 4. AutoMigrate the database schema.
 	fmt.Println("Database is being migrated")
-	err = db.AutoMigrate(&model.User{}) // Add other models here later, e.g., &model.Transcription{}
+	err = db.AutoMigrate(&model.User{}, &model.Transcription{}) // Add other models here later, e.g., &model.Transcription{}
 	if err != nil {
 		log.Fatal("Failed to migrate database: ", err)
 	}
