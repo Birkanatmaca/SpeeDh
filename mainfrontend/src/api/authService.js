@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8080/api/v1/auth';
+const API_URL = 'http://localhost:8080/api/v1';
 
 export const register = (firstName, lastName, email, password) => {
-    return axios.post(`${API_URL}/register`, {
+    return axios.post(`${API_URL}/auth/register`, {
         first_name: firstName,
         last_name: lastName,
         email,
@@ -12,14 +12,14 @@ export const register = (firstName, lastName, email, password) => {
 };
 
 export const login = (email, password) => {
-    return axios.post(`${API_URL}/login`, {
+    return axios.post(`${API_URL}/auth/login`, {
         email,
         password,
     });
 };
 
 export const verifyEmail = (email, code) => {
-    return axios.post(`${API_URL}/verify-email`, {
+    return axios.post(`${API_URL}/auth/verify-email`, {
         email,
         code,
     });
@@ -29,13 +29,16 @@ export const transcribeAudio = (audioFile) => {
     const formData = new FormData();
     formData.append('audio', audioFile);
 
-    // Token'ı localStorage'dan oku
     const token = localStorage.getItem('authToken');
 
-    return axios.post(`${API_BASE_URL}/transcribe`, formData, {
+    // HATA BURADAYDI: "API_URL" yerine "API_BASE_URL" kullanılmalı.
+    // return axios.post(`${API_URL}/transcribe`, formData, {
+
+    // DÜZELTİLMİŞ HALİ:
+    return axios.post(`${API_URL}/transcribe`, formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}` // Okunan token'ı kullan
+            'Authorization': `Bearer ${token}`
         }
     });
 };

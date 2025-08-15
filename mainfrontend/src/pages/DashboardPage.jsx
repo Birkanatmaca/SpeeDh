@@ -1,14 +1,16 @@
 import React, { useState, useRef } from 'react';
-import { BsFillMicFill, BsUpload, BsClockHistory, BsGearFill, BsArrowLeft, BsRecordCircle, BsStopCircle } from "react-icons/bs";
+import { BsFillMicFill, BsUpload, BsClockHistory, BsGearFill, BsArrowLeft, BsRecordCircle, BsStopCircle, BsTrashFill, BsBoxArrowRight } from "react-icons/bs";
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
-import { transcribeAudio } from '../api/authService'; // API fonksiyonunu import et
+import { transcribeAudio } from '../api/authService';
+import { useNavigate } from 'react-router-dom';
 import './DashboardPage.scss';
 
 const DashboardPage = () => {
     const [activeView, setActiveView] = useState('main');
     const [isRecording, setIsRecording] = useState(false);
     const [audioBlob, setAudioBlob] = useState(null);
+    const [audioURL, setAudioURL] = useState('');
     const [uploadedFile, setUploadedFile] = useState(null);
     const [transcription, setTranscription] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -17,32 +19,30 @@ const DashboardPage = () => {
     const mediaRecorder = useRef(null);
     const audioChunks = useRef([]);
     const userName = "Kullanıcı";
+    const navigate = useNavigate();
 
-    // Örnek geçmiş transkript verisi
     const transcripts = [
         { id: 1, name: 'toplanti_kaydi_1.wav', date: '14.08.2025', duration: '15:32' },
         { id: 2, name: 'gorusme_notlari.mp3', date: '12.08.2025', duration: '05:48' },
-        { id: 3, name: 'podcast_bolum_3.m4a', date: '11.08.2025', duration: '45:12' },
-        { id: 4, name: 'fikir_firtinasi.mp3', date: '10.08.2025', duration: '22:05' },
     ];
+
     const startRecording = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorder.current = new MediaRecorder(stream);
-
             mediaRecorder.current.ondataavailable = (event) => {
                 audioChunks.current.push(event.data);
             };
-
             mediaRecorder.current.onstop = () => {
                 const blob = new Blob(audioChunks.current, { type: 'audio/wav' });
+                const url = URL.createObjectURL(blob);
                 setAudioBlob(blob);
+                setAudioURL(url);
                 audioChunks.current = [];
             };
-
             mediaRecorder.current.start();
             setIsRecording(true);
-            setAudioBlob(null); // Önceki kaydı temizle
+            handleDeleteRecording();
         } catch (err) {
             console.error("Mikrofon erişim hatası:", err);
             setError("Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarından izin verin.");
@@ -56,37 +56,58 @@ const DashboardPage = () => {
         }
     };
 
-    // --- METNE DÖNÜŞTÜRME FONKSİYONU ---
+    const handleDeleteRecording = () => {
+        setAudioBlob(null);
+        setAudioURL('');
+    };
+
     const handleTranscribe = async () => {
-        const fileToTranscribe = uploadedFile || audioBlob;
+        // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
+
+        let fileToTranscribe;
+
+        if (uploadedFile) {
+            fileToTranscribe = uploadedFile;
+        } else if (audioBlob) {
+            // Sorunu çözen kısım: Blob'u isimlendirilmiş bir File nesnesine dönüştürüyoruz.
+            // Bu, backend'in c.FormFile("audio") ile dosyayı doğru tanımasını sağlar.
+            fileToTranscribe = new File([audioBlob], "recording.wav", { type: "audio/wav" });
+        }
+
         if (!fileToTranscribe) {
             setError("Lütfen bir ses dosyası yükleyin veya bir ses kaydedin.");
             return;
         }
+
+        // --- DEĞİŞİKLİK BURADA BİTİYOR ---
+
         setError('');
         setTranscription('');
         setIsLoading(true);
 
         try {
-            // Artık token göndermemize gerek yok, authService hallediyor.
+            // Artık doğru formatta olan fileToTranscribe'ı gönderiyoruz.
             const response = await transcribeAudio(fileToTranscribe);
             setTranscription(response.data.transcription);
         } catch (err) {
+            // Hata ayıklamayı kolaylaştırmak için konsola daha detaylı bilgi yazdıralım.
+            console.error("API Hatası:", err.response || err);
+
             if (err.response && err.response.status === 401) {
                 setError("Oturum süreniz dolmuş veya geçersiz. Lütfen tekrar giriş yapın.");
-                // İsteğe bağlı: localStorage.clear(); navigate('/login');
             } else {
                 setError(err.response?.data?.error || "Metne dönüştürme sırasında bir hata oluştu.");
             }
         } finally {
             setIsLoading(false);
             setUploadedFile(null);
-            setAudioBlob(null);
+            handleDeleteRecording();
         }
     };
+
     const handleLogout = () => {
-        localStorage.removeItem('authToken'); // Token'ı sil
-        navigate('/login'); // Login sayfasına yönlendir
+        localStorage.removeItem('authToken');
+        navigate('/login');
     };
 
     const renderContent = () => {
@@ -160,26 +181,41 @@ const DashboardPage = () => {
                 );
             default: // 'main'
                 return (
-                    <div className="dashboard-content">
-                        <div className="recorder-section">
-                            <h2>Ses Kaydet</h2>
-                            <div className="recorder-visualizer">
-                                {isRecording ? <BsRecordCircle className="mic-icon recording" /> : <BsFillMicFill className="mic-icon" />}
-                                <div className="record-time">{audioBlob ? "Kayıt Tamamlandı" : (isRecording ? "Kaydediliyor..." : "00:00")}</div>
+                    <div className="transcribe-container">
+                        <div className="input-options">
+                            <div className="recorder-section">
+                                <h2>Ses Kaydet</h2>
+                                <div className="recorder-visualizer">
+                                    {audioURL ? (
+                                        <div className="audio-player-container">
+                                            <audio src={audioURL} controls />
+                                            <button className="delete-button" onClick={handleDeleteRecording} title="Kaydı Sil">
+                                                <BsTrashFill />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {isRecording ? <BsRecordCircle className="mic-icon recording" /> : <BsFillMicFill className="mic-icon" />}
+                                            <div className="record-time">{isRecording ? "Kaydediliyor..." : "00:00"}</div>
+                                        </>
+                                    )}
+                                </div>
+                                {!audioBlob && (isRecording ? (
+                                    <button className="record-button stop" onClick={stopRecording}><BsStopCircle /> Kaydı Durdur</button>
+                                ) : (
+                                    <button className="record-button" onClick={startRecording}><BsFillMicFill /> Kaydı Başlat</button>
+                                ))}
                             </div>
-                            {isRecording ? (
-                                <button className="record-button stop" onClick={stopRecording}><BsStopCircle /> Kaydı Durdur</button>
-                            ) : (
-                                <button className="record-button" onClick={startRecording}><BsFillMicFill /> Kaydı Başlat</button>
-                            )}
+                            <div className="upload-section">
+                                <h2>Veya Bir Dosya Yükle</h2>
+                                <div className="upload-area" onClick={() => document.querySelector('.file-input-hidden').click()}>
+                                    <BsUpload className="upload-icon" />
+                                    <p>{uploadedFile ? uploadedFile.name : "Dosyanızı buraya sürükleyin veya seçmek için tıklayın."}</p>
+                                    <input type="file" className="file-input-hidden" onChange={(e) => setUploadedFile(e.target.files[0])} style={{ display: 'none' }} accept="audio/*" />
+                                </div>
+                            </div>
                         </div>
-                        <div className="upload-section">
-                            <h2>Veya Bir Dosya Yükle</h2>
-                            <div className="upload-area" onClick={() => document.querySelector('.file-input-hidden').click()}>
-                                <BsUpload className="upload-icon" />
-                                <p>{uploadedFile ? uploadedFile.name : "Dosyanızı buraya sürükleyin veya seçmek için tıklayın."}</p>
-                                <input type="file" className="file-input-hidden" onChange={(e) => setUploadedFile(e.target.files[0])} style={{ display: 'none' }} />
-                            </div>
+                        <div className="transcribe-action">
                             <button className="transcribe-button" onClick={handleTranscribe} disabled={isLoading || (!audioBlob && !uploadedFile)}>
                                 {isLoading ? 'Dönüştürülüyor...' : 'Metne Dönüştür'}
                             </button>
@@ -211,16 +247,15 @@ const DashboardPage = () => {
                         <button className="settings-button" onClick={() => setActiveView('settings')} title="Ayarlar">
                             <BsGearFill />
                         </button>
-                        <div className="settings-form-container logout-section">
-                            <Button onClick={handleLogout}>Çıkış Yap</Button>
-                        </div>
+                        <button className="logout-button" onClick={handleLogout} title="Çıkış Yap">
+                            <BsBoxArrowRight />
+                        </button>
                     </div>
                 </header>
 
                 <main className="dashboard-main-content">
                     {renderContent()}
                 </main>
-                {/* Hata ve Sonuç Alanı */}
                 {(error || transcription || isLoading) && (
                     <footer className="dashboard-footer">
                         {isLoading && <p className="loading-message">Lütfen bekleyin, metin oluşturuluyor...</p>}
