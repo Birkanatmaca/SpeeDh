@@ -14,12 +14,10 @@ const VerifyEmailPage = () => {
     const navigate = useNavigate(); // Başarılı olunca yönlendirme yapmak için
     const location = useLocation(); // Register sayfasından gönderilen e-posta bilgisini almak için
 
-    // Register sayfasından gönderilen e-posta adresini alıyoruz.
-    // Bu, kullanıcının e-postasını tekrar girmesini önler.
+
     const email = location.state?.email;
 
-    // Eğer kullanıcı bu sayfaya doğrudan (kayıt olmadan) gelirse, e-posta bilgisi olmaz.
-    // Bu durumda bir hata gösterip kayıt sayfasına yönlendirebiliriz.
+
     if (!email) {
         return (
             <div className="auth-page">

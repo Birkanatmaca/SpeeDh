@@ -4,6 +4,7 @@ import Button from '../components/common/Button';
 import { login } from '../api/authService';
 import { BsFillMicFill } from "react-icons/bs";
 import './AuthPage.scss'; // Kayıt sayfasıyla aynı ortak stil dosyasını kullanıyoruz
+import { useNavigate } from 'react-router-dom'; // Yönlendirme için eklendi
 
 const LoginPage = () => {
     const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ const LoginPage = () => {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate(); // Yönlendirme için eklendi
 
     // Input alanlarındaki her değişiklikte state'i güncelleyen fonksiyon
     const handleChange = (e) => {
@@ -27,12 +29,9 @@ const LoginPage = () => {
             const response = await login(formData.email, formData.password);
 
             // --- BAŞARILI GİRİŞ SONRASI ---
-            // Bu token'ı daha sonra Context API veya Redux gibi bir state management
-            // aracıyla global state'e kaydedip, localStorage'da saklayacağız.
-            // Şimdilik sadece konsola yazdıralım ve kullanıcıya bir bildirim gösterelim.
             console.log('Giriş Başarılı! Token:', response.data.token);
-            alert('Giriş başarılı! Ana sayfaya yönlendiriliyorsunuz...');
-            // window.location.href = '/dashboard'; // Gerçekte yapılacak yönlendirme
+            // Dashboard sayfasına yönlendirme
+            navigate('/dashboard');
 
         } catch (err) {
             // Backend'den gelen hata mesajını state'e kaydedip ekranda gösteriyoruz

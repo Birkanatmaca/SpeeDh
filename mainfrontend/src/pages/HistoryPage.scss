@@ -1,0 +1,174 @@
+@use '../styles/variables' as *;
+
+.history-page {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    background-color: #f4f7f6;
+    overflow: hidden;
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+// Arka plan ikonları için stiller (Dashboard ile aynı)
+.background-icons {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+}
+
+.background-icon-wrapper {
+    position: absolute;
+    opacity: 0;
+    animation: floatIcon 25s infinite ease-in-out;
+
+    svg {
+        width: 100%;
+        height: 100%;
+    }
+}
+
+.icon1 {
+    width: 100px;
+    height: 100px;
+    top: 10%;
+    left: 5%;
+    animation-delay: 0s;
+
+    svg {
+        color: rgba($primary-color, 0.25);
+    }
+}
+
+.icon2 {
+    width: 140px;
+    height: 140px;
+    top: 70%;
+    left: 85%;
+    animation-delay: 2s;
+
+    svg {
+        color: rgba($accent-color, 0.35);
+    }
+}
+
+.icon3 {
+    width: 60px;
+    height: 60px;
+    top: 5%;
+    left: 90%;
+    animation-delay: 4s;
+
+    svg {
+        color: rgba($secondary-color, 0.3);
+    }
+}
+
+.icon4 {
+    width: 160px;
+    height: 160px;
+    top: 80%;
+    left: -5%;
+    animation-delay: 6s;
+
+    svg {
+        color: rgba($primary-color, 0.2);
+    }
+}
+
+.history-box {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 1000px;
+    height: 85vh;
+    padding: 2.5rem;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: $border-radius;
+    box-shadow: $box-shadow;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid $border-color;
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+
+    h1 {
+        color: $text-color;
+        font-size: 1.8rem;
+    }
+}
+
+.back-button {
+    padding: 10px 20px;
+    background-color: $primary-color;
+    border: none;
+    border-radius: $border-radius;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background-color: $secondary-color;
+    }
+}
+
+.history-content {
+    width: 100%;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid $border-color;
+    }
+
+    th {
+        color: $text-light;
+        font-weight: 600;
+    }
+
+    tbody tr {
+        &:hover {
+            background-color: #f9f9f9;
+        }
+    }
+}
+
+.action-button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    margin-right: 5px;
+    cursor: pointer;
+
+    &.view {
+        background-color: $primary-color;
+    }
+
+    &.delete {
+        background-color: $accent-color;
+    }
+}

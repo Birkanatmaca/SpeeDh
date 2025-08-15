@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import { register } from '../api/authService';
-import { FiMic } from "react-icons/fi"; // İkonu import ediyoruz
 import { BsFillMicFill } from "react-icons/bs";
 import './AuthPage.scss';
 
