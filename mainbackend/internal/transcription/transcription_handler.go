@@ -39,6 +39,20 @@ func runWhisperLocally(filePath string) (string, error) {
 	return string(content), nil
 }
 func TranscribeHandler(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kullanıcı ID'si bulunamadı, bu rota korumalı olmalı"})
+		return
+	}
+
+	// userID'nin doğru tipte olduğunu doğrulayalım.
+	userIDUint, ok := userID.(uint)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Kullanıcı ID'si formatı hatalı"})
+		return
+	}
+
+	fmt.Printf(">>> Transkript isteği, Kullanıcı ID %d tarafından yapıldı.\n", userIDUint)
 	file, err := c.FormFile("audio")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Ses dosyası bulunamadı: " + err.Error()})

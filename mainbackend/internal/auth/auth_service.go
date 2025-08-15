@@ -31,6 +31,7 @@ type AuthService interface {
 	ResendVerificationCode(email string) error
 	RequestPasswordReset(email string) error      // Düzeltme: Fonksiyon adı daha açıklayıcı oldu.
 	ResetPassword(code, newPassword string) error // Düzeltme: E-posta parametresi kaldırıldı.
+	GetJWTSecret() []byte                         // Middleware için gerekli metot.
 }
 
 type authService struct {
@@ -219,4 +220,7 @@ func (s *authService) generateJWT(user *model.User) (string, error) {
 		"iat": time.Now().Unix(),
 	})
 	return claims.SignedString(s.jwtSecret)
+}
+func (s *authService) GetJWTSecret() []byte {
+	return s.jwtSecret
 }
