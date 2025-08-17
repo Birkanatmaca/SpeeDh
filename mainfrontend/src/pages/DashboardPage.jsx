@@ -23,10 +23,7 @@ const DashboardPage = () => {
     const userName = "Kullanıcı";
     const navigate = useNavigate();
 
-    const transcripts = [
-        { id: 1, name: 'toplanti_kaydi_1.wav', date: '14.08.2025', duration: '15:32' },
-        { id: 2, name: 'gorusme_notlari.mp3', date: '12.08.2025', duration: '05:48' },
-    ];
+    const [transcripts, setTranscripts] = useState([]);
 
     const startRecording = async () => {
         try {
@@ -61,6 +58,26 @@ const DashboardPage = () => {
     const handleDeleteRecording = () => {
         setAudioBlob(null);
         setAudioURL('');
+    };
+
+    const handleHistoryClick = async () => {
+        setActiveView('history');
+        setIsLoading(true);
+        setError('');
+        try {
+            const response = await getHistory();
+            setTranscripts(response.data || []);
+        } catch (err) {
+            // Hata detayını konsola yazdır
+            console.error("Geçmiş yüklenirken hata:", err.response || err);
+
+            // Sunucudan gelen hata mesajını veya genel bir mesajı göster
+            const errorMessage = err.response?.data?.error || "Geçmiş transkriptler yüklenemedi. Sunucuya ulaşılamıyor veya bir hata oluştu. Lütfen tekrar deneyin.";
+            setError(errorMessage);
+            setTranscripts([]);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleTranscribe = async () => {
@@ -105,6 +122,11 @@ const DashboardPage = () => {
             setUploadedFile(null);
             handleDeleteRecording();
         }
+    };
+
+    const formatDate = (dateString) => {
+        const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+        return new Date(dateString).toLocaleDateString('tr-TR', options);
     };
 
     const handleLogout = () => {
@@ -155,29 +177,33 @@ const DashboardPage = () => {
                             </button>
                         </div>
                         <main className="history-content">
-                            <table className="history-table">
-                                <thead>
-                                    <tr>
-                                        <th>Dosya Adı</th>
-                                        <th>Tarih</th>
-                                        <th>Süre</th>
-                                        <th>İşlemler</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {transcripts.map(item => (
-                                        <tr key={item.id}>
-                                            <td>{item.name}</td>
-                                            <td>{item.date}</td>
-                                            <td>{item.duration}</td>
-                                            <td>
-                                                <button className="action-button view">Görüntüle</button>
-                                                <button className="action-button delete">Sil</button>
-                                            </td>
+                            {isLoading ? <p>Yükleniyor...</p> : error ? <p className="error-message">{error}</p> : (
+                                <table className="history-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Başlık</th>
+                                            <th>Tarih</th>
+                                            <th>İşlemler</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {transcripts.length > 0 ? transcripts.map(item => (
+                                            <tr key={item.id}>
+                                                <td>{item.title}</td>
+                                                <td>{formatDate(item.created_at)}</td>
+                                                <td>
+                                                    <button className="action-button view"><BsEyeFill /> Görüntüle</button>
+                                                    <button className="action-button delete"><BsTrashFill /> Sil</button>
+                                                </td>
+                                            </tr>
+                                        )) : (
+                                            <tr>
+                                                <td colSpan="3">Henüz bir transkript oluşturmadınız.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            )}
                         </main>
                     </div>
                 );
@@ -244,7 +270,8 @@ const DashboardPage = () => {
                 <header className="dashboard-header">
                     <h1>SpeeDch'e hoş geldin, {userName}!</h1>
                     <div className="header-buttons">
-                        <button className="history-button" onClick={() => setActiveView('history')}>
+                        {/* handleHistoryClick fonksiyonunu burada çağırın */}
+                        <button className="history-button" onClick={handleHistoryClick}>
                             <BsClockHistory /> Geçmiş Transkriptler
                         </button>
                         <button className="settings-button" onClick={() => setActiveView('settings')} title="Ayarlar">

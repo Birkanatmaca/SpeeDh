@@ -42,3 +42,12 @@ export const transcribeAudio = (audioFile) => {
         }
     });
 };
+
+export const getHistory = () => {
+    const token = localStorage.getItem('authToken');
+    return axios.get(`${API_URL}/transcripts`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+};
