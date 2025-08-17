@@ -9,6 +9,8 @@ import (
 type ITranscriptionRepository interface {
 	Create(transcription *model.Transcription) error
 	FindByUserID(userID uint) ([]model.Transcription, error)
+	FindByID(id uint) (*model.Transcription, error)
+	DeleteByID(id uint) error
 }
 
 // transcriptionRepository, veritabanı bağlantısını tutar.
@@ -30,4 +32,13 @@ func (r *transcriptionRepository) FindByUserID(userID uint) ([]model.Transcripti
 	// 'user_id' alanı userID ile eşleşen kayıtları bul ve CreatedAt'a göre en yeniden eskiye doğru sırala
 	result := r.db.Where("user_id = ?", userID).Order("created_at desc").Find(&transcriptions)
 	return transcriptions, result.Error
+}
+func (r *transcriptionRepository) FindByID(id uint) (*model.Transcription, error) {
+	var transcription model.Transcription
+	result := r.db.First(&transcription, id)
+	return &transcription, result.Error
+}
+
+func (r *transcriptionRepository) DeleteByID(id uint) error {
+	return r.db.Delete(&model.Transcription{}, id).Error
 }

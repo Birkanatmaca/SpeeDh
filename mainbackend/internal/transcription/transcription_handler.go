@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -52,7 +53,7 @@ func (h *TranscribeHandler) Transcribe(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Dosya kaydedilemedi: " + err.Error()})
 		return
 	}
-	defer os.Remove(filePath) // İşlem bitince dosyayı sil
+	// defer os.Remove(filePath) // <--- BU SATIR KALDIRILDI
 
 	// Whisper ile metne dönüştür
 	transcribedText, err := runWhisperLocally(filePath)
@@ -112,4 +113,50 @@ func (h *TranscribeHandler) GetTranscripts(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, transcripts)
+}
+func (h *TranscribeHandler) GetAudioFile(c *gin.Context) {
+	userIDValue, _ := c.Get("userID")
+	userID := userIDValue.(uint)
+
+	transcriptIDStr := c.Param("id")
+	transcriptID, err := strconv.ParseUint(transcriptIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Geçersiz ID formatı"})
+		return
+	}
+
+	transcript, err := h.service.GetTranscriptByID(uint(transcriptID))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Transkript bulunamadı"})
+		return
+	}
+
+	// Güvenlik kontrolü: Kullanıcı sadece kendi ses dosyasını indirebilir.
+	if transcript.UserID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Bu dosyaya erişim yetkiniz yok"})
+		return
+	}
+
+	// Dosyayı istemciye gönder.
+	c.File(transcript.AudioFilepath)
+}
+
+func (h *TranscribeHandler) DeleteTranscript(c *gin.Context) {
+	userIDValue, _ := c.Get("userID")
+	userID := userIDValue.(uint)
+
+	transcriptIDStr := c.Param("id")
+	transcriptID, err := strconv.ParseUint(transcriptIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Geçersiz ID formatı"})
+		return
+	}
+
+	err = h.service.DeleteTranscript(uint(transcriptID), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Transkript başarıyla silindi."})
 }
