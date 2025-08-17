@@ -5,6 +5,7 @@ import "mainbackend/internal/model"
 // ITranscriptionService arayüzü, transkript ile ilgili iş mantığı operasyonlarını tanımlar.
 type ITranscriptionService interface {
 	SaveTranscription(userID uint, text, originalFilename, filepath string) (*model.Transcription, error)
+	GetTranscriptsByUserID(userID uint) ([]model.Transcription, error)
 }
 
 // transcriptionService, repository'yi kullanarak işlemleri gerçekleştirir.
@@ -15,6 +16,9 @@ type transcriptionService struct {
 // NewTranscriptionService, yeni bir servis örneği oluşturur.
 func NewTranscriptionService(repo ITranscriptionRepository) ITranscriptionService {
 	return &transcriptionService{repo: repo}
+}
+func (s *transcriptionService) GetTranscriptsByUserID(userID uint) ([]model.Transcription, error) {
+	return s.repo.FindByUserID(userID)
 }
 
 // SaveTranscription, yeni bir transkript nesnesi oluşturur ve veritabanına kaydeder.

@@ -93,3 +93,23 @@ func runWhisperLocally(filePath string) (string, error) {
 	fmt.Println(">>> Whisper process is success.")
 	return string(content), nil
 }
+func (h *TranscribeHandler) GetTranscripts(c *gin.Context) {
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kullanıcı ID'si bulunamadı"})
+		return
+	}
+	userID, ok := userIDValue.(uint)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Kullanıcı ID'si formatı hatalı"})
+		return
+	}
+
+	transcripts, err := h.service.GetTranscriptsByUserID(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Transkriptler alınırken bir hata oluştu: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, transcripts)
+}

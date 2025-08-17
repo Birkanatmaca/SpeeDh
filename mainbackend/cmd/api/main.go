@@ -58,6 +58,7 @@ func main() {
 		{
 			// Handler'ı doğrudan kullanmak yerine oluşturduğumuz handler örneğini kullanıyoruz
 			protectedRoutes.POST("/transcribe", transcriptionHandler.Transcribe)
+			protectedRoutes.GET("/transcripts", transcriptionHandler.GetTranscripts)
 		}
 	}
 
