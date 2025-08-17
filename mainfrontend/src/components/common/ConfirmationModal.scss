@@ -1,0 +1,66 @@
+@use '../../styles/variables' as *;
+
+.confirmation-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000; // Diğer modalın üzerinde olması için daha yüksek bir değer
+    backdrop-filter: blur(5px);
+}
+
+.confirmation-modal-content {
+    background: $background-color;
+    padding: 2rem;
+    border-radius: $border-radius;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.confirmation-modal-message {
+    color: $text-color;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+
+.confirmation-modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.confirm-button {
+    padding: 10px 25px;
+    border: none;
+    border-radius: $border-radius;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &.yes {
+        background-color: green; // Kırmızı
+        color: white;
+
+        &:hover {
+            background-color: #c53030;
+        }
+    }
+
+    &.no {
+        background-color: red; // Gri
+        color: white;
+
+        &:hover {
+            background-color: #cbd5e0;
+        }
+    }
+}

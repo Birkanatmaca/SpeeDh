@@ -51,3 +51,22 @@ export const getHistory = () => {
         }
     });
 };
+
+export const getAudioFile = (transcriptId) => {
+    const token = localStorage.getItem('authToken');
+    return axios.get(`${API_URL}/transcripts/${transcriptId}/audio`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        },
+        responseType: 'blob', // Bu çok önemli! Dosyayı blob olarak almamızı sağlar.
+    });
+};
+
+export const deleteTranscript = (transcriptId) => {
+    const token = localStorage.getItem('authToken');
+    return axios.delete(`${API_URL}/transcripts/${transcriptId}`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+};

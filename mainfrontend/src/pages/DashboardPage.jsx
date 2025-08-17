@@ -1,13 +1,13 @@
 import React, { useState, useRef } from 'react';
-import { BsFillMicFill, BsUpload, BsClockHistory, BsGearFill, BsArrowLeft, BsRecordCircle, BsStopCircle, BsTrashFill, BsBoxArrowRight } from "react-icons/bs";
+import { BsFillMicFill, BsUpload, BsClockHistory, BsGearFill, BsArrowLeft, BsRecordCircle, BsStopCircle, BsTrashFill, BsBoxArrowRight, BsEyeFill } from "react-icons/bs";
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
-import { transcribeAudio } from '../api/authService';
+import { transcribeAudio, getHistory, getAudioFile, deleteTranscript } from '../api/authService';
 import { useNavigate } from 'react-router-dom';
 import './DashboardPage.scss';
 import BiacaButton from '../components/common/BiacaButton';
-
-
+import Modal from '../components/common/Modal';
+import ConfirmationModal from '../components/common/ConfirmationModal';
 const DashboardPage = () => {
     const [activeView, setActiveView] = useState('main');
     const [isRecording, setIsRecording] = useState(false);
@@ -17,13 +17,18 @@ const DashboardPage = () => {
     const [transcription, setTranscription] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [transcripts, setTranscripts] = useState([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedTranscript, setSelectedTranscript] = useState(null);
 
     const mediaRecorder = useRef(null);
     const audioChunks = useRef([]);
+
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const [transcriptToDelete, setTranscriptToDelete] = useState(null);
+
     const userName = "Kullanıcı";
     const navigate = useNavigate();
-
-    const [transcripts, setTranscripts] = useState([]);
 
     const startRecording = async () => {
         try {
@@ -33,6 +38,7 @@ const DashboardPage = () => {
                 audioChunks.current.push(event.data);
             };
             mediaRecorder.current.onstop = () => {
+                // ---------- DÜZELTME 1: Blob formatını tekrar 'audio/wav' yapıyoruz ----------
                 const blob = new Blob(audioChunks.current, { type: 'audio/wav' });
                 const url = URL.createObjectURL(blob);
                 setAudioBlob(blob);
@@ -59,38 +65,51 @@ const DashboardPage = () => {
         setAudioBlob(null);
         setAudioURL('');
     };
+    const handleDeleteClick = (transcript) => {
+        setTranscriptToDelete(transcript);
+        setIsConfirmModalOpen(true);
+    };
 
-    const handleHistoryClick = async () => {
-        setActiveView('history');
-        setIsLoading(true);
-        setError('');
+    // Onay modalını kapatır
+    const handleCloseConfirmModal = () => {
+        setIsConfirmModalOpen(false);
+        setTranscriptToDelete(null);
+    };
+
+    // Onay modalında "Evet"e basıldığında silme işlemini gerçekleştirir
+    const handleConfirmDelete = async () => {
+        if (!transcriptToDelete) return;
+
         try {
-            const response = await getHistory();
-            setTranscripts(response.data || []);
+            await deleteTranscript(transcriptToDelete.id);
+            // Başarılı olursa, listeden silinmiş olanı filtrele
+            setTranscripts(transcripts.filter(t => t.id !== transcriptToDelete.id));
         } catch (err) {
-            // Hata detayını konsola yazdır
-            console.error("Geçmiş yüklenirken hata:", err.response || err);
-
-            // Sunucudan gelen hata mesajını veya genel bir mesajı göster
-            const errorMessage = err.response?.data?.error || "Geçmiş transkriptler yüklenemedi. Sunucuya ulaşılamıyor veya bir hata oluştu. Lütfen tekrar deneyin.";
-            setError(errorMessage);
-            setTranscripts([]);
+            console.error("Silme hatası:", err);
+            setError("Kayıt silinirken bir hata oluştu.");
         } finally {
-            setIsLoading(false);
+            // Modalı kapat
+            handleCloseConfirmModal();
         }
     };
 
     const handleTranscribe = async () => {
-        // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
-
         let fileToTranscribe;
 
         if (uploadedFile) {
             fileToTranscribe = uploadedFile;
         } else if (audioBlob) {
-            // Sorunu çözen kısım: Blob'u isimlendirilmiş bir File nesnesine dönüştürüyoruz.
-            // Bu, backend'in c.FormFile("audio") ile dosyayı doğru tanımasını sağlar.
-            fileToTranscribe = new File([audioBlob], "recording.wav", { type: "audio/wav" });
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+
+            // ---------- DÜZELTME 2: Dosya adını ve formatını tekrar '.wav' yapıyoruz ----------
+            const fileName = `Kayıt_${year}${month}${day}_${hours}${minutes}${seconds}.wav`;
+            fileToTranscribe = new File([audioBlob], fileName, { type: "audio/wav" });
         }
 
         if (!fileToTranscribe) {
@@ -98,20 +117,15 @@ const DashboardPage = () => {
             return;
         }
 
-        // --- DEĞİŞİKLİK BURADA BİTİYOR ---
-
         setError('');
         setTranscription('');
         setIsLoading(true);
 
         try {
-            // Artık doğru formatta olan fileToTranscribe'ı gönderiyoruz.
             const response = await transcribeAudio(fileToTranscribe);
             setTranscription(response.data.transcription);
         } catch (err) {
-            // Hata ayıklamayı kolaylaştırmak için konsola daha detaylı bilgi yazdıralım.
             console.error("API Hatası:", err.response || err);
-
             if (err.response && err.response.status === 401) {
                 setError("Oturum süreniz dolmuş veya geçersiz. Lütfen tekrar giriş yapın.");
             } else {
@@ -124,6 +138,23 @@ const DashboardPage = () => {
         }
     };
 
+    const handleHistoryClick = async () => {
+        setActiveView('history');
+        setIsLoading(true);
+        setError('');
+        try {
+            const response = await getHistory();
+            setTranscripts(response.data || []);
+        } catch (err) {
+            console.error("Geçmiş yüklenirken hata:", err.response || err);
+            const errorMessage = err.response?.data?.error || "Geçmiş transkriptler yüklenemedi. Sunucuya ulaşılamıyor veya bir hata oluştu. Lütfen tekrar deneyin.";
+            setError(errorMessage);
+            setTranscripts([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const formatDate = (dateString) => {
         const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
         return new Date(dateString).toLocaleDateString('tr-TR', options);
@@ -132,6 +163,47 @@ const DashboardPage = () => {
     const handleLogout = () => {
         localStorage.removeItem('authToken');
         navigate('/login');
+    };
+
+    const handleViewClick = (transcript) => {
+        setSelectedTranscript(transcript);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedTranscript(null);
+    };
+
+    const handleDownloadText = () => {
+        if (!selectedTranscript) return;
+        const blob = new Blob([selectedTranscript.transcription_text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${selectedTranscript.title}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleDownloadAudio = async () => {
+        if (!selectedTranscript) return;
+        try {
+            const response = await getAudioFile(selectedTranscript.id);
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = selectedTranscript.original_filename || 'audio.wav';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error("Ses dosyası indirilemedi:", err);
+            setError("Ses dosyası indirilirken bir hata oluştu.");
+        }
     };
 
     const renderContent = () => {
@@ -177,7 +249,7 @@ const DashboardPage = () => {
                             </button>
                         </div>
                         <main className="history-content">
-                            {isLoading ? <p>Yükleniyor...</p> : error ? <p className="error-message">{error}</p> : (
+                            {isLoading ? <p>Yükleniyor...</p> : error ? <div className="error-message" style={{ textAlign: 'center', padding: '1rem' }}>{error}</div> : (
                                 <table className="history-table">
                                     <thead>
                                         <tr>
@@ -192,13 +264,14 @@ const DashboardPage = () => {
                                                 <td>{item.title}</td>
                                                 <td>{formatDate(item.created_at)}</td>
                                                 <td>
-                                                    <button className="action-button view"><BsEyeFill /> Görüntüle</button>
-                                                    <button className="action-button delete"><BsTrashFill /> Sil</button>
+                                                    <button className="action-button view" onClick={() => handleViewClick(item)}><BsEyeFill /> Görüntüle</button>
+                                                    {/* OnClick olayını güncelle */}
+                                                    <button className="action-button delete" onClick={() => handleDeleteClick(item)}><BsTrashFill /> Sil</button>
                                                 </td>
                                             </tr>
                                         )) : (
                                             <tr>
-                                                <td colSpan="3">Henüz bir transkript oluşturmadınız.</td>
+                                                <td colSpan="3" style={{ textAlign: 'center', padding: '1rem' }}>Henüz bir transkript oluşturmadınız.</td>
                                             </tr>
                                         )}
                                     </tbody>
@@ -270,7 +343,6 @@ const DashboardPage = () => {
                 <header className="dashboard-header">
                     <h1>SpeeDch'e hoş geldin, {userName}!</h1>
                     <div className="header-buttons">
-                        {/* handleHistoryClick fonksiyonunu burada çağırın */}
                         <button className="history-button" onClick={handleHistoryClick}>
                             <BsClockHistory /> Geçmiş Transkriptler
                         </button>
@@ -286,7 +358,7 @@ const DashboardPage = () => {
                 <main className="dashboard-main-content">
                     {renderContent()}
                 </main>
-                {(error || transcription || isLoading) && (
+                {(error && activeView === 'main' || transcription || (isLoading && activeView === 'main')) && (
                     <footer className="dashboard-footer">
                         {isLoading && <p className="loading-message">Lütfen bekleyin, metin oluşturuluyor...</p>}
                         {error && <p className="error-message">{error}</p>}
@@ -299,6 +371,20 @@ const DashboardPage = () => {
                     </footer>
                 )}
             </div>
+
+            <Modal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                transcript={selectedTranscript}
+                onDownloadText={handleDownloadText}
+                onDownloadAudio={handleDownloadAudio}
+            />
+            <ConfirmationModal
+                isOpen={isConfirmModalOpen}
+                onClose={handleCloseConfirmModal}
+                onConfirm={handleConfirmDelete}
+                message="Kaydı ve transkripti silmek istediğinize emin misiniz?"
+            />
         </div>
     );
 };

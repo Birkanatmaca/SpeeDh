@@ -1,0 +1,93 @@
+@use '../../styles/variables' as *;
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: $background-color;
+    padding: 2rem;
+    border-radius: $border-radius;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid $border-color;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+
+    .modal-title {
+        color: $text-color;
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+    .modal-close-button {
+        background: transparent;
+        border: none;
+        font-size: 2rem;
+        cursor: pointer;
+        color: $text-light;
+        transition: color 0.2s ease;
+
+        &:hover {
+            color: $text-color;
+        }
+    }
+}
+
+.modal-body {
+    overflow-y: auto;
+    padding-right: 1rem; // Scrollbar için boşluk
+    color: #333;
+    white-space: pre-wrap; // Satır atlamalarını korur
+    line-height: 1.6;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding-top: 1.5rem;
+    margin-top: 1rem;
+    border-top: 1px solid $border-color;
+}
+
+.modal-action-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: $border-radius;
+    background: linear-gradient(45deg, $secondary-color, $primary-color);
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        box-shadow: 0 6px 15px rgba($primary-color, 0.3);
+        transform: translateY(-2px);
+    }
+}
