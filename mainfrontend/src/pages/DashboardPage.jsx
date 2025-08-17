@@ -5,6 +5,8 @@ import Button from '../components/common/Button';
 import { transcribeAudio } from '../api/authService';
 import { useNavigate } from 'react-router-dom';
 import './DashboardPage.scss';
+import BiacaButton from '../components/common/BiacaButton';
+
 
 const DashboardPage = () => {
     const [activeView, setActiveView] = useState('main');
@@ -227,6 +229,7 @@ const DashboardPage = () => {
 
     return (
         <div className="dashboard-page">
+            <BiacaButton />
             <div className="background-icons">
                 <div className="background-icon-wrapper icon1"><BsFillMicFill /></div>
                 <div className="background-icon-wrapper icon2"><BsFillMicFill /></div>

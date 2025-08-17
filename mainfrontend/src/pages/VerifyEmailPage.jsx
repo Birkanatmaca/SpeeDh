@@ -5,6 +5,7 @@ import Button from '../components/common/Button';
 import { verifyEmail } from '../api/authService'; // Yeni API fonksiyonumuz
 import { BsFillMicFill } from "react-icons/bs";
 import './AuthPage.scss';
+import BiacaButton from '../components/common/BiacaButton';
 
 const VerifyEmailPage = () => {
     const [code, setCode] = useState('');
@@ -49,6 +50,7 @@ const VerifyEmailPage = () => {
 
     return (
         <div className="auth-page">
+            <BiacaButton />
             <div className="background-icons">
                 <div className="background-icon-wrapper icon1"><BsFillMicFill /></div>
                 <div className="background-icon-wrapper icon2"><BsFillMicFill /></div>

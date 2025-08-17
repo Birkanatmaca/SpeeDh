@@ -5,6 +5,7 @@ import { login } from '../api/authService';
 import { BsFillMicFill } from "react-icons/bs";
 import './AuthPage.scss'; // Kayıt sayfasıyla aynı ortak stil dosyasını kullanıyoruz
 import { useNavigate } from 'react-router-dom'; // Yönlendirme için eklendi
+import BiacaButton from '../components/common/BiacaButton';
 
 const LoginPage = () => {
     const [formData, setFormData] = useState({
@@ -45,6 +46,7 @@ const LoginPage = () => {
 
     return (
         <div className="auth-page">
+            <BiacaButton />
             {/* Arka Plan Animasyon Katmanı */}
             <div className="background-icons">
                 <div className="background-icon-wrapper icon1"><BsFillMicFill /></div>

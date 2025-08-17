@@ -1,0 +1,40 @@
+$tech-blue: #00bfff;
+$dark-bg: #0a192f;
+$light-text: #ccd6f6;
+
+.biaca-button {
+    position: fixed;
+    bottom: 25px;
+    left: 25px;
+    padding: 8px 16px;
+    background-color: rgba(10, 25, 47, 0.85);
+    color: $light-text;
+    border: 1px solid $tech-blue;
+    border-radius: 5px;
+    text-decoration: none;
+    font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+    font-size: 12px; // Yazı boyutunu küçültelim
+    line-height: 1.2; // Satır aralığını ayarlayalım
+    backdrop-filter: blur(8px);
+    transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+    z-index: 1000;
+
+    span {
+        display: block; // "Created By" yazısını alt satıra almak için
+        font-size: 0.8em; // Daha küçük bir boyutta
+        color: #adb5bd; // Hafifçe soluk bir renk
+    }
+
+    strong {
+        font-weight: bold;
+        color: $tech-blue;
+    }
+
+    &:hover {
+        transform: translateY(-3px);
+        background-color: rgba(10, 25, 47, 1);
+        color: #ffffff;
+        border-color: #ffffff;
+        box-shadow: 0 0 10px $tech-blue, 0 0 15px $tech-blue;
+    }
+}

@@ -5,6 +5,7 @@ import Button from '../components/common/Button';
 import { register } from '../api/authService';
 import { BsFillMicFill } from "react-icons/bs";
 import './AuthPage.scss';
+import BiacaButton from '../components/common/BiacaButton';
 
 const RegisterPage = () => {
     const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', password: '' });
@@ -32,6 +33,7 @@ const RegisterPage = () => {
 
     return (
         <div className="auth-page">
+            <BiacaButton />
             <div className="background-icons">
                 <div className="background-icon-wrapper icon1"><BsFillMicFill /></div>
                 <div className="background-icon-wrapper icon2"><BsFillMicFill /></div>
