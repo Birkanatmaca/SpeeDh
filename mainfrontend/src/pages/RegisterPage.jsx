@@ -43,7 +43,7 @@ const RegisterPage = () => {
             </div>
             <div className="auth-container">
                 <div className="auth-panel">
-                    <h1>SpeeDh</h1>
+                    <h1>SpeeDch</h1>
                     <p>Fikirlerini sese, sesini metne dönüştür. Anında. Akıllıca.</p>
                 </div>
                 <div className="auth-form-wrapper">

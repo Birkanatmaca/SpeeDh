@@ -239,7 +239,7 @@ const DashboardPage = () => {
 
             <div className="dashboard-box">
                 <header className="dashboard-header">
-                    <h1>SpeeDh'e hoş geldin, {userName}!</h1>
+                    <h1>SpeeDch'e hoş geldin, {userName}!</h1>
                     <div className="header-buttons">
                         <button className="history-button" onClick={() => setActiveView('history')}>
                             <BsClockHistory /> Geçmiş Transkriptler
