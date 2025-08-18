@@ -52,6 +52,7 @@ func main() {
 			authRoutes.POST("/login", authHandler.Login)
 			authRoutes.POST("/forgot-password", authHandler.ForgotPassword)
 			authRoutes.POST("/reset-password", authHandler.ResetPassword)
+
 		}
 		protectedRoutes := api.Group("/")
 		protectedRoutes.Use(auth.AuthMiddleware(authService))
@@ -61,6 +62,8 @@ func main() {
 			protectedRoutes.GET("/transcripts", transcriptionHandler.GetTranscripts)
 			protectedRoutes.GET("/transcripts/:id/audio", transcriptionHandler.GetAudioFile)
 			protectedRoutes.DELETE("/transcripts/:id", transcriptionHandler.DeleteTranscript)
+			protectedRoutes.GET("/users/me", authHandler.GetUserProfile)
+			protectedRoutes.PUT("/users/me/password", authHandler.ChangePassword)
 		}
 	}
 

@@ -18,6 +18,7 @@ type UserRepository interface {
 	IncrementVerificationSends(user *model.User) error
 	LockUserAccount(user *model.User, until time.Time) error
 	DeleteUserByID(userID uint) error
+	GetUserByID(id uint) (*model.User, error)
 }
 
 type userRepository struct {
@@ -76,4 +77,9 @@ func (r *userRepository) LockUserAccount(user *model.User, until time.Time) erro
 
 func (r *userRepository) DeleteUserByID(userID uint) error {
 	return r.db.Where("id = ?", userID).Delete(&model.User{}).Error
+}
+func (r *userRepository) GetUserByID(id uint) (*model.User, error) {
+	var user model.User
+	result := r.db.First(&user, id)
+	return &user, result.Error
 }

@@ -31,7 +31,9 @@ type AuthService interface {
 	ResendVerificationCode(email string) error
 	RequestPasswordReset(email string) error      // Düzeltme: Fonksiyon adı daha açıklayıcı oldu.
 	ResetPassword(code, newPassword string) error // Düzeltme: E-posta parametresi kaldırıldı.
-	GetJWTSecret() []byte                         // Middleware için gerekli metot.
+	GetJWTSecret() []byte
+	GetUserByID(id uint) (*model.User, error)
+	ChangePassword(userID uint, oldPassword, newPassword string) error // Middleware için gerekli metot.
 }
 
 type authService struct {
@@ -223,4 +225,30 @@ func (s *authService) generateJWT(user *model.User) (string, error) {
 }
 func (s *authService) GetJWTSecret() []byte {
 	return s.jwtSecret
+}
+func (s *authService) GetUserByID(id uint) (*model.User, error) {
+	return s.userRepo.GetUserByID(id)
+}
+
+// YENİ FONKSİYON
+func (s *authService) ChangePassword(userID uint, oldPassword, newPassword string) error {
+	if len(newPassword) < 8 {
+		return errors.New("yeni şifre en az 8 karakter olmalıdır")
+	}
+
+	user, err := s.userRepo.GetUserByID(userID)
+	if err != nil {
+		return errors.New("kullanıcı bulunamadı")
+	}
+
+	// Mevcut şifreyi kontrol et
+	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oldPassword)); err != nil {
+		return errors.New("mevcut şifre hatalı")
+	}
+
+	// Yeni şifreyi hash'le
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+
+	// Veritabanında güncelle
+	return s.userRepo.UpdatePassword(user.ID, string(hashedPassword))
 }

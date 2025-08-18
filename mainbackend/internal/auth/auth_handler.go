@@ -128,3 +128,48 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Şifreniz başarıyla güncellendi."})
 }
+func (h *AuthHandler) GetUserProfile(c *gin.Context) {
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Yetkilendirme hatası"})
+		return
+	}
+	userID := userIDValue.(uint)
+
+	user, err := h.authService.GetUserByID(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Kullanıcı bulunamadı"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user) // GORM modelindeki json tag'leri sayesinde şifre gibi hassas veriler otomatik olarak ayıklanır.
+}
+
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password" binding:"required"`
+	NewPassword     string `json:"new_password" binding:"required,min=8"`
+}
+
+// YENİ FONKSİYON: Kullanıcının şifresini değiştirir.
+func (h *AuthHandler) ChangePassword(c *gin.Context) {
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Yetkilendirme hatası"})
+		return
+	}
+	userID := userIDValue.(uint)
+
+	var req ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := h.authService.ChangePassword(userID, req.CurrentPassword, req.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Şifreniz başarıyla güncellendi."})
+}
