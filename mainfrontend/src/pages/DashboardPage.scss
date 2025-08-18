@@ -5,17 +5,17 @@
     position: relative;
     display: flex;
     justify-content: center;
-    align-items: center;
-    width: 100vw;
-    height: 100vh;
+    align-items: center; // Kutuyu dikeyde ortalamak için
+    width: 100%;
+    min-height: 100vh;
     background-color: #f4f7f6;
-    overflow: hidden;
-    padding: 2rem;
+    overflow: auto; // Sayfanın kendisi kaydırılabilir olsun
+    padding: 2rem; // Masaüstü için kenar boşlukları
     box-sizing: border-box;
 }
 
 .background-icons {
-    position: absolute;
+    position: fixed; // Animasyonların sayfa kaydırılsa bile sabit kalması için
     top: 0;
     left: 0;
     width: 100%;
@@ -149,15 +149,16 @@
     z-index: 1;
     width: 100%;
     max-width: 1000px;
-    height: 85vh;
-    padding: 2.5rem;
+    height: auto; // Yükseklik içeriğe göre belirlenecek
+    max-height: calc(100vh - 4rem); // Ekran yüksekliğinden taşmasını engelle
+    display: flex;
+    flex-direction: column;
     background-color: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     border-radius: $border-radius;
     box-shadow: $box-shadow;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+    overflow: hidden; // İçerik kaydırmasını kendi içinde yönetmesi için
+    padding: 2.5rem;
 }
 
 .dashboard-header {
@@ -166,7 +167,7 @@
     align-items: center;
     border-bottom: 1px solid $border-color;
     padding-bottom: 1.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     flex-shrink: 0;
 
     h1 {
@@ -246,8 +247,8 @@
 
 .dashboard-main-content {
     flex-grow: 1;
-    display: flex;
-    overflow-y: auto;
+    overflow-y: auto; // Sadece ana içerik alanı kaydırılabilir olacak
+    padding-right: 1rem;
 }
 
 .transcribe-container {
@@ -274,12 +275,82 @@
     }
 }
 
-.settings-view,
+
 .history-view {
     width: 100%;
     animation: fadeIn 0.5s ease-in-out;
 }
 
+// ---------- AYARLAR SAYFASI YENİ STİLLERİ BAŞLANGIÇ ----------
+.settings-view {
+    width: 100%;
+    animation: fadeIn 0.5s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    align-items: center; // İçeriği ortalamak için
+    gap: 2rem;
+}
+
+.settings-form-container {
+    background-color: #ffffff;
+    padding: 2rem 2.5rem;
+    border-radius: $border-radius;
+    border: 1px solid $border-color;
+    width: 100%;
+    max-width: 600px; // Kart genişliğini sabitle
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+    h4 {
+        margin-top: 0;
+        margin-bottom: 2rem;
+        color: $text-color;
+        font-size: 1.3rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid $primary-color;
+        text-align: left;
+    }
+
+    .success-message,
+    .error-message {
+        text-align: center;
+        padding: 10px;
+        border-radius: 5px;
+        margin-top: 1rem;
+        font-weight: 500;
+    }
+
+    .success-message {
+        background-color: #e8f5e9;
+        color: #388e3c;
+    }
+
+    .error-message {
+        background-color: #ffebee;
+        color: #c62828;
+    }
+}
+
+// İkonlu input stilleri
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px; // Input'un kendi margin'i yerine bunu kullanalım
+
+    svg {
+        position: absolute;
+        left: 15px;
+        color: $text-light;
+        font-size: 1.1rem;
+    }
+
+    .custom-input {
+        padding-left: 45px; // İkon için boşluk bırak
+        margin-bottom: 0; // Kendi margin'ini sıfırla
+    }
+}
+
+// ---------- AYARLAR SAYFASI YENİ STİLLERİ BİTİŞ ----------
 .view-header {
     display: flex;
     justify-content: space-between;
@@ -542,10 +613,11 @@
 }
 
 .dashboard-footer {
+    flex-shrink: 0;
     margin-top: 1.5rem;
     padding-top: 1.5rem;
     border-top: 1px solid $border-color;
-    flex-shrink: 0;
+
 
     .loading-message {
         text-align: center;
@@ -586,29 +658,63 @@
 }
 
 @media (max-width: 900px) {
+    .dashboard-page {
+        padding: 1rem; // Tablet için boşluk
+    }
+
+    .dashboard-box {
+        padding: 1.5rem;
+        max-height: calc(100vh - 2rem); // Yeni boşluğa göre ayarla
+    }
+
+    .dashboard-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+
+        h1 {
+            font-size: 1.5rem;
+        }
+    }
 
     .input-options,
     .settings-content {
         grid-template-columns: 1fr;
     }
 
-    .dashboard-box {
-        height: 90vh;
-        padding: 1.5rem;
-    }
-
-    .dashboard-header {
-        flex-direction: column;
-        gap: 1rem;
-
-        h1 {
-            font-size: 1.5rem;
-            text-align: center;
-        }
-    }
-
     .view-header {
         flex-direction: column;
         gap: 1rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .dashboard-page {
+        padding: 1rem; // Mobil için de kenar boşluğu bırakıyoruz
+        align-items: flex-start; // Kutuyu yukarıdan başlat
+    }
+
+    .dashboard-box {
+        margin-top: 1rem; // Üstten boşluk
+        margin-bottom: 1rem; // Alttan boşluk
+        height: auto; // Yüksekliği tamamen içeriğe bırak
+        max-height: none; // Yükseklik kısıtlamasını kaldır
+        overflow: visible; // İçerik taşarsa sayfa kaydırılsın
+    }
+
+    .dashboard-main-content {
+        overflow-y: visible; // İçeriğin kendi kaydırma çubuğu olmasın
+        padding-right: 0;
+    }
+
+    .dashboard-header {
+        h1 {
+            font-size: 1.3rem;
+        }
+
+        .header-buttons {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
     }
 }

@@ -248,11 +248,16 @@
     }
 
     .auth-panel {
-        min-height: 200px;
+        // Renkli alanın minimum yüksekliğini 150px'e düşürdük
+        min-height: 150px;
         text-align: center;
+        // İçerik daha iyi sığsın diye dikey padding'i azalttık
+        padding-top: 20px;
+        padding-bottom: 20px;
 
         h1 {
-            font-size: 2.5rem;
+            // Başlık font boyutunu da küçülttük
+            font-size: 2.2rem;
         }
 
         p {

@@ -13,7 +13,6 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
-        {/* /history rotası artık gerekli değil, kaldırıldı */}
       </Routes>
     </BrowserRouter>
   );

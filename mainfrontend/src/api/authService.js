@@ -70,3 +70,21 @@ export const deleteTranscript = (transcriptId) => {
         }
     });
 };
+
+export const getUserProfile = () => {
+    const token = localStorage.getItem('authToken');
+    return axios.get(`${API_URL}/users/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+};
+
+// YENİ FONKSİYON: Şifre değiştirme isteği gönderir.
+export const changePassword = (currentPassword, newPassword) => {
+    const token = localStorage.getItem('authToken');
+    return axios.put(`${API_URL}/users/me/password`, {
+        current_password: currentPassword,
+        new_password: newPassword
+    }, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+};

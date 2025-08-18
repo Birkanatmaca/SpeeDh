@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { BsFillMicFill, BsUpload, BsClockHistory, BsGearFill, BsArrowLeft, BsRecordCircle, BsStopCircle, BsTrashFill, BsBoxArrowRight, BsEyeFill } from "react-icons/bs";
+import { BsFillMicFill, BsUpload, BsClockHistory, BsGearFill, BsArrowLeft, BsRecordCircle, BsStopCircle, BsTrashFill, BsBoxArrowRight, BsEyeFill, BsPerson, BsEnvelope, BsKey } from "react-icons/bs";
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
-import { transcribeAudio, getHistory, getAudioFile, deleteTranscript } from '../api/authService';
+import { transcribeAudio, getHistory, getAudioFile, deleteTranscript, getUserProfile, changePassword } from '../api/authService';
 import { useNavigate } from 'react-router-dom';
 import './DashboardPage.scss';
 import BiacaButton from '../components/common/BiacaButton';
@@ -26,6 +26,11 @@ const DashboardPage = () => {
 
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [transcriptToDelete, setTranscriptToDelete] = useState(null);
+
+    const [profile, setProfile] = useState(null);
+    const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordSuccess, setPasswordSuccess] = useState('');
 
     const userName = "Kullanıcı";
     const navigate = useNavigate();
@@ -205,9 +210,46 @@ const DashboardPage = () => {
             setError("Ses dosyası indirilirken bir hata oluştu.");
         }
     };
+    const handleSettingsClick = async () => {
+        setActiveView('settings');
+        setError(''); // Genel hata mesajını temizle
+        try {
+            const response = await getUserProfile();
+            setProfile(response.data);
+        } catch (err) {
+            setError("Kullanıcı bilgileri yüklenemedi.");
+            setProfile(null);
+        }
+    };
+
+    // Şifre formu inputları değiştikçe state'i günceller
+    const handlePasswordFormChange = (e) => {
+        setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+    };
+
+    // Şifre değiştirme formu gönderildiğinde çalışır
+    const handlePasswordSubmit = async (e) => {
+        e.preventDefault();
+        setPasswordError('');
+        setPasswordSuccess('');
+
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            setPasswordError("Yeni şifreler eşleşmiyor.");
+            return;
+        }
+
+        try {
+            const response = await changePassword(passwordData.currentPassword, passwordData.newPassword);
+            setPasswordSuccess(response.data.message);
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' }); // Formu temizle
+        } catch (err) {
+            setPasswordError(err.response?.data?.error || "Şifre değiştirilirken bir hata oluştu.");
+        }
+    };
 
     const renderContent = () => {
         switch (activeView) {
+            // ---------- AYARLAR SAYFASI YENİ YAPISI BAŞLANGIÇ ----------
             case 'settings':
                 return (
                     <div className="settings-view">
@@ -217,30 +259,48 @@ const DashboardPage = () => {
                                 <BsArrowLeft /> Ana Sayfaya Dön
                             </button>
                         </div>
-                        <div className="settings-content">
-                            <div className="settings-form-container">
-                                <h4>Kullanıcı Bilgileri</h4>
-                                <form>
-                                    <Input name="firstName" type="text" placeholder="Ad" defaultValue="Kullanıcı" />
-                                    <Input name="lastName" type="text" placeholder="Soyad" defaultValue="Adı" />
-                                    <Input name="email" type="email" placeholder="E-posta" defaultValue="kullanici@mail.com" disabled />
-                                    <Button type="submit">Bilgileri Güncelle</Button>
-                                </form>
-                            </div>
-                            <div className="settings-form-container">
-                                <h4>Şifre Değiştir</h4>
-                                <form>
-                                    <Input name="currentPassword" type="password" placeholder="Mevcut Şifre" />
-                                    <Input name="newPassword" type="password" placeholder="Yeni Şifre" />
-                                    <Input name="confirmPassword" type="password" placeholder="Yeni Şifre (Tekrar)" />
-                                    <Button type="submit">Şifreyi Değiştir</Button>
-                                </form>
-                            </div>
+
+                        <div className="settings-form-container">
+                            <h4>Kullanıcı Bilgileri</h4>
+                            <form>
+                                <div className="input-with-icon">
+                                    <BsPerson />
+                                    <Input name="fullName" type="text" placeholder="Ad Soyad" value={profile ? `${profile.first_name} ${profile.last_name}` : 'Yükleniyor...'} readOnly />
+                                </div>
+                                <div className="input-with-icon">
+                                    <BsEnvelope />
+                                    <Input name="email" type="email" placeholder="E-posta" value={profile ? profile.email : 'Yükleniyor...'} readOnly />
+                                </div>
+                            </form>
+                        </div>
+
+                        <div className="settings-form-container">
+                            <h4>Şifre Değiştir</h4>
+                            <form onSubmit={handlePasswordSubmit}>
+                                <div className="input-with-icon">
+                                    <BsKey />
+                                    <Input name="currentPassword" type="password" placeholder="Mevcut Şifre" value={passwordData.currentPassword} onChange={handlePasswordFormChange} required />
+                                </div>
+                                <div className="input-with-icon">
+                                    <BsKey />
+                                    <Input name="newPassword" type="password" placeholder="Yeni Şifre" value={passwordData.newPassword} onChange={handlePasswordFormChange} required />
+                                </div>
+                                <div className="input-with-icon">
+                                    <BsKey />
+                                    <Input name="confirmPassword" type="password" placeholder="Yeni Şifre (Tekrar)" value={passwordData.confirmPassword} onChange={handlePasswordFormChange} required />
+                                </div>
+                                <Button type="submit">Şifreyi Değiştir</Button>
+                                {passwordSuccess && <p className="success-message">{passwordSuccess}</p>}
+                                {passwordError && <p className="error-message">{passwordError}</p>}
+                            </form>
                         </div>
                     </div>
                 );
+            // ---------- AYARLAR SAYFASI YENİ YAPISI BİTİŞ ----------
+
             case 'history':
                 return (
+                    //... (Bu kısım aynı kalacak)
                     <div className="history-view">
                         <div className="view-header">
                             <h3>Geçmiş Transkriptler</h3>
@@ -265,7 +325,6 @@ const DashboardPage = () => {
                                                 <td>{formatDate(item.created_at)}</td>
                                                 <td>
                                                     <button className="action-button view" onClick={() => handleViewClick(item)}><BsEyeFill /> Görüntüle</button>
-                                                    {/* OnClick olayını güncelle */}
                                                     <button className="action-button delete" onClick={() => handleDeleteClick(item)}><BsTrashFill /> Sil</button>
                                                 </td>
                                             </tr>
@@ -282,6 +341,7 @@ const DashboardPage = () => {
                 );
             default: // 'main'
                 return (
+                    //... (Bu kısım aynı kalacak)
                     <div className="transcribe-container">
                         <div className="input-options">
                             <div className="recorder-section">
@@ -346,7 +406,7 @@ const DashboardPage = () => {
                         <button className="history-button" onClick={handleHistoryClick}>
                             <BsClockHistory /> Geçmiş Transkriptler
                         </button>
-                        <button className="settings-button" onClick={() => setActiveView('settings')} title="Ayarlar">
+                        <button className="settings-button" onClick={handleSettingsClick} title="Ayarlar">
                             <BsGearFill />
                         </button>
                         <button className="logout-button" onClick={handleLogout} title="Çıkış Yap">

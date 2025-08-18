@@ -1,6 +1,6 @@
 import './Input.scss';
 
-const Input = ({ type, placeholder, value, onChange, name }) => {
+const Input = ({ type, placeholder, value, onChange, name, readOnly }) => {
     return (
         <input
             className="custom-input"
@@ -10,6 +10,7 @@ const Input = ({ type, placeholder, value, onChange, name }) => {
             onChange={onChange}
             name={name}
             required
+            readOnly={readOnly} // Bu satırı ekleyin
         />
     );
 };
