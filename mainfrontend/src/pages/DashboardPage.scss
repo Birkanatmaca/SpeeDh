@@ -252,10 +252,45 @@
     padding-right: 1rem;
 }
 
-.transcribe-container {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
+/* LÜTFEN MEVCUT .transcripts-container KURALINI BUNUNLA DEĞİŞTİRİN */
+.transcripts-container {
+    display: grid;
+    gap: 1.5rem;
+
+    // --- YATAY KAYDIRMA İÇİN EKLEMELER ---
+
+    // Grid elemanlarının alt alta değil, yan yana dizilmesini zorlar.
+    grid-auto-flow: column;
+
+    // Her bir kartın minimum genişliğini belirler. 
+    // Bu sayede kartlar ezilip küçülmez.
+    grid-auto-columns: minmax(280px, 1fr);
+
+    // Dikey taşmayı gizle, yatay taşma olursa scrollbar (kaydırma çubuğu) göster.
+    overflow-y: hidden;
+    overflow-x: auto;
+
+    // Kaydırma çubuğu için altta küçük bir boşluk bırakır.
+    padding-bottom: 1.5rem;
+
+    // --- Daha şık bir kaydırma çubuğu için (opsiyonel) ---
+    &::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: #e0e0e0;
+        border-radius: 10px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #a0a0a0;
+        border-radius: 10px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+        background: #888;
+    }
 }
 
 .input-options {
@@ -717,5 +752,48 @@
             flex-wrap: wrap;
             justify-content: center;
         }
+    }
+}
+
+// ===================================================================
+// RESPONSIVE DÜZENLEMELERİ (GEÇMİŞ TRANSKRİPTLER İÇİN)
+// ===================================================================
+
+// --- Tablet Görünümü (992px ve altı) ---
+@media (max-width: 992px) {
+    .transcripts-container {
+        // Geniş ekranlardaki 3 sütunlu yapıyı 2 sütuna düşürür.
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+
+// --- Mobil Görünüm (768px ve altı) ---
+@media (max-width: 768px) {
+
+    // Sayfanın kenar boşluklarını mobil için azaltarak içeriğe yer açar.
+    .dashboard-page {
+        padding: 1rem;
+    }
+
+    // Ana kutunun iç boşluklarını mobil için azaltır.
+    .dashboard-box {
+        padding: 1.5rem;
+        // İçerik sığmazsa dikey kaydırmaya izin verir.
+        overflow-y: auto;
+    }
+
+    // Başlığı ve butonu mobil için daha düzgün hizalar.
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .transcripts-container {
+        // Kartları tek sütun halinde alt alta sıralar. 
+        // Bu, sağa-sola kayma sorununu tamamen çözer.
+        grid-template-columns: 1fr;
+        gap: 1rem; // Kartlar arası boşluğu biraz azaltır.
     }
 }

@@ -1,0 +1,59 @@
+@use '../styles/variables' as *;
+
+.transcripts-page {
+    padding: 2rem;
+    height: 100%;
+    // Sayfanın dikeyde kaydırılabilir olmasını sağlar ve yatay kaydırmayı engeller.
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        // Küçük ekranlarda başlık ve butonun alt alta gelmesini sağlar.
+        flex-wrap: wrap;
+        gap: 1rem;
+
+        h1 {
+            font-size: 2.5rem;
+            color: $text-color;
+        }
+    }
+
+    .transcripts-container {
+        display: grid;
+        // Varsayılan (geniş ekran) görünüm: 3 sütun
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+    }
+
+    // --- RESPONSIVE DÜZENLEMELERİ ---
+
+    // Tabletler için (992px ve altı)
+    @media (max-width: 992px) {
+        .transcripts-container {
+            // Sütun sayısını 2'ye düşür.
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    // Mobil cihazlar için (768px ve altı)
+    @media (max-width: 768px) {
+        .page-header {
+            // Başlık ve butonun hizalamasını düzenle.
+            justify-content: flex-start;
+        }
+
+        .page-header h1 {
+            // Başlık fontunu mobil için biraz küçült.
+            font-size: 2rem;
+        }
+
+        .transcripts-container {
+            // Sütun sayısını 1'e düşürerek kartları alt alta sırala.
+            grid-template-columns: 1fr;
+        }
+    }
+}
