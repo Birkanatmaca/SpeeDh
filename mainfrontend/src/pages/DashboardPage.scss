@@ -5,13 +5,14 @@
     position: relative;
     display: flex;
     justify-content: center;
-    align-items: center; // Kutuyu dikeyde ortalamak için
-    width: 100%;
+    align-items: center;
+    width: 100vw;
+    // Değişiklik başlangıcı: Sayfanın içeriğe göre uzayabilmesi için min-height kullanıldı ve overflow kaldırıldı.
     min-height: 100vh;
-    background-color: #f4f7f6;
-    overflow: auto; // Sayfanın kendisi kaydırılabilir olsun
-    padding: 2rem; // Masaüstü için kenar boşlukları
+    background: white; // Arka planı isteğinize göre beyaz olarak bıraktım.
+    padding: 2rem;
     box-sizing: border-box;
+    // Değişiklik sonu.
 }
 
 .background-icons {
