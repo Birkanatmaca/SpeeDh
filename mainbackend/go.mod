@@ -5,6 +5,7 @@ go 1.23.5
 require github.com/gin-gonic/gin v1.10.1
 
 require (
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.2 // indirect
 	github.com/bytedance/sonic v1.14.0 // indirect
 	github.com/bytedance/sonic/loader v0.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
@@ -43,3 +44,4 @@ require (
 	gorm.io/driver/postgres v1.6.0 // indirect
 	gorm.io/gorm v1.30.1 // indirect
 )
+
