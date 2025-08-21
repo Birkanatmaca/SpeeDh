@@ -254,12 +254,10 @@ const DashboardPage = () => {
                 return (
                     <div className="settings-view">
                         <div className="view-header">
-                            <h3>Ayarlar</h3>
                             <button className="back-to-dash-button" onClick={() => setActiveView('main')}>
                                 <BsArrowLeft /> Ana Sayfaya Dön
                             </button>
                         </div>
-
                         <div className="settings-form-container">
                             <h4>Kullanıcı Bilgileri</h4>
                             <form>
@@ -303,7 +301,6 @@ const DashboardPage = () => {
                     //... (Bu kısım aynı kalacak)
                     <div className="history-view">
                         <div className="view-header">
-                            <h3>Geçmiş Transkriptler</h3>
                             <button className="back-to-dash-button" onClick={() => setActiveView('main')}>
                                 <BsArrowLeft /> Ana Sayfaya Dön
                             </button>

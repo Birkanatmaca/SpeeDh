@@ -15,7 +15,7 @@ import (
 
 // ITranscriptionService arayüzü, transkript ile ilgili iş mantığı operasyonlarını tanımlar.
 type ITranscriptionService interface {
-	CreateTranscription(userID int, originalFilePath string) (*model.Transcription, error) // <-- BU SATIRI EKLEYİN
+	CreateTranscription(userID uint, originalFilePath string) (*model.Transcription, error) // <-- BU SATIRI EKLEYİN
 	SaveTranscription(userID uint, text, originalFilename, filepath string) (*model.Transcription, error)
 	GetTranscriptsByUserID(userID uint) ([]model.Transcription, error)
 	GetTranscriptByID(id uint) (*model.Transcription, error)
@@ -23,12 +23,13 @@ type ITranscriptionService interface {
 }
 
 // transcriptionService, repository'yi kullanarak işlemleri gerçekleştirir.
+// transcriptionService struct'ına aiClient alanını ekliyoruz.
 type transcriptionService struct {
 	repo     ITranscriptionRepository
 	aiClient ai.IAIClient
 }
 
-// NewTranscriptionService, yeni bir servis örneği oluşturur.
+// NewTranscriptionService fonksiyonunu güncelliyoruz, artık aiClient parametresi alıyor.
 func NewTranscriptionService(repo ITranscriptionRepository, aiClient ai.IAIClient) ITranscriptionService {
 	return &transcriptionService{
 		repo:     repo,
@@ -134,57 +135,65 @@ func (s *transcriptionService) ProcessAudioFile(originalFilePath string) (string
 	return "Transkripsiyon metni buraya gelecek", nil
 }
 
-func (s *transcriptionService) CreateTranscription(userID int, originalFilePath string) (*model.Transcription, error) {
+// CreateTranscription, tam iş akışını yönetir.
+func (s *transcriptionService) CreateTranscription(userID uint, originalFilePath string) (*model.Transcription, error) {
 	defer cleanupFile(originalFilePath)
-
-	cleanedFilePath := strings.TrimSuffix(originalFilePath, filepath.Ext(originalFilePath)) + "_cleaned.wav"
+	ext := filepath.Ext(originalFilePath)
+	cleanedFilePath := strings.TrimSuffix(originalFilePath, ext) + "_cleaned.wav"
 	defer cleanupFile(cleanedFilePath)
 
-	log.Printf("FFmpeg ile gürültü temizleme başlatılıyor: %s -> %s", originalFilePath, cleanedFilePath)
+	// Adım 1: FFmpeg
+	log.Printf("Adım 1/4: FFmpeg ile ses işleniyor...")
 	cmd := exec.Command("ffmpeg", "-i", originalFilePath, "-af", "afftdn", "-ar", "16000", "-ac", "1", cleanedFilePath)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
+	if output, err := cmd.CombinedOutput(); err != nil {
 		log.Printf("FFmpeg hatası: %s", string(output))
-		return nil, fmt.Errorf("ses dosyası işlenemedi (ffmpeg error)")
+		return nil, fmt.Errorf("ses dosyası işlenemedi")
 	}
-	log.Println("Gürültü temizleme tamamlandı.")
+	log.Println(">>> FFmpeg başarılı.")
 
-	log.Printf("Whisper ile transkripsiyon başlatılıyor: %s", cleanedFilePath)
-	whisperCmd := exec.Command("whisper", cleanedFilePath, "--model", "base", "--language", "Turkish", "--output_format", "txt", "--output_dir", filepath.Dir(cleanedFilePath))
-	output, err = whisperCmd.CombinedOutput()
-	if err != nil {
-		log.Printf("Whisper hatası: %s", string(output))
-		return nil, fmt.Errorf("transkripsiyon işlemi başarısız oldu (whisper error)")
-	}
-	log.Printf("Whisper çıktısı: %s", string(output))
-
+	// Adım 2: Whisper
+	log.Printf("Adım 2/4: Whisper ile transkripsiyon...")
 	transcriptFilePath := strings.TrimSuffix(cleanedFilePath, ".wav") + ".txt"
 	defer cleanupFile(transcriptFilePath)
+	whisperCmd := exec.Command("whisper", cleanedFilePath, "--model", "base", "--language", "Turkish", "--output_format", "txt", "--output_dir", filepath.Dir(cleanedFilePath))
+	if output, err := whisperCmd.CombinedOutput(); err != nil {
+		log.Printf("Whisper hatası: %s", string(output))
+		return nil, fmt.Errorf("transkripsiyon işlemi başarısız oldu")
+	}
+	log.Println(">>> Whisper başarılı.")
 
 	contentBytes, err := os.ReadFile(transcriptFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("transkript dosyası okunamadı: %w", err)
 	}
-	transcriptText := string(contentBytes)
-	log.Println("Transkripsiyon tamamlandı.")
+	rawTranscriptText := string(contentBytes)
 
-	// --- DÜZELTİLEN KISIM ---
-	// Alan adları model dosyanızdaki 'Content' ve 'FilePath' ile eşleştirildi.
-	transcription := &model.Transcription{
-		UserID:           uint(userID),
-		OriginalFilename: transcriptText,   // <-- 'Text' değil, 'Content' olacak
-		AudioFilepath:    originalFilePath, // <-- 'AudioPath' değil, 'FilePath' olacak
-		CreatedAt:        time.Now(),
+	// Adım 3: AI Düzeltme
+	log.Printf("Adım 3/4: AI ile metin düzenleniyor...")
+	refinedText, err := s.aiClient.RefineTranscription(rawTranscriptText)
+	if err != nil {
+		log.Printf("AI metin düzenleme hatası: %v. Ham metin kullanılacak.", err)
+		refinedText = rawTranscriptText
 	}
+	log.Println(">>> AI başarılı.")
 
+	// Adım 4: Veritabanına Kaydetme
+	log.Printf("Adım 4/4: Veritabanına kaydediliyor...")
+	finalText := strings.TrimSpace(refinedText)
+	transcription := &model.Transcription{
+		UserID:            userID,
+		TranscriptionText: finalText,
+		AudioFilepath:     originalFilePath,
+		CreatedAt:         time.Now(),
+	}
 	if err := s.repo.Create(transcription); err != nil {
 		return nil, fmt.Errorf("transkript veritabanına kaydedilemedi: %w", err)
 	}
-
+	log.Println(">>> Kayıt başarılı.")
 	return transcription, nil
 }
 
-// ... (dosyanın geri kalanı aynı) ...
+// Geçici dosyaları silmek için yardımcı fonksiyon
 func cleanupFile(path string) {
 	err := os.Remove(path)
 	if err != nil {

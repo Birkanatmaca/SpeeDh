@@ -1,20 +1,19 @@
 // mainbackend/internal/platform/ai/ollama_client.go
-
 package ai
 
 import (
 	"context"
 	"fmt"
-
 	"github.com/ollama/ollama/api"
+	"strings"
 )
 
-// ollamaClient, IAIClient arayüzünü uygular
+// ollamaClient, IAIClient arayüzünü uygular.
 type ollamaClient struct {
 	client *api.Client
 }
 
-// NewOllamaClient, yeni bir istemci oluşturur ve IAIClient arayüzü olarak döndürür.
+// NewOllamaClient, yerel Ollama sunucusu için yeni bir istemci oluşturur.
 func NewOllamaClient() IAIClient {
 	client, err := api.ClientFromEnvironment()
 	if err != nil {
@@ -23,18 +22,23 @@ func NewOllamaClient() IAIClient {
 	return &ollamaClient{client: client}
 }
 
-// RefineTranscription metodu, IAIClient arayüzünün bir parçasıdır.
+// RefineTranscription, ham metni alır ve Ollama modeline göndererek düzenlenmiş halini döndürür.
 func (c *ollamaClient) RefineTranscription(rawText string) (string, error) {
+	if rawText == "" {
+		return "", nil // Boş metin geldiyse, boş döndür.
+	}
+
 	prompt := fmt.Sprintf(
-		"Sen yetenekli bir editörsün. Aşağıdaki metin, bir ses kaydından dönüştürülmüş ham bir transkripttir. "+
-			"Görevin; yazım ve dil bilgisi hatalarını düzeltmek, uygun noktalama işaretlerini (virgül, nokta, soru işareti) eklemek "+
-			"ve metni temiz, okunabilir paragraflar halinde biçimlendirmektir. Metnin anlamını özetleme veya değiştirme. "+
-			"Metnin orijinal dili Türkçe'dir. Lütfen düzeltilmiş metni Türkçe olarak sun. İşte transkript:\n\n---\n\n%s",
+		"Sen yetenekli bir Türkçe editörsün. Aşağıdaki metin, bir ses kaydından dönüştürülmüş ham bir transkripttir. "+
+			"Görevin; sadece yazım ve dil bilgisi hatalarını düzeltmek, uygun noktalama işaretlerini (virgül, nokta, soru işareti) eklemek "+
+			"ve metni temiz, okunabilir paragraflar haline biçimlendirmektir. Metnin anlamını veya kelimelerini kesinlikle değiştirme. "+
+			"Eğer metin anlamsız veya boş ise, sadece boş bir metin döndür. Düzeltilmiş metni Türkçe olarak sun."+
+			"Çıktı olarak sadece düzenlenmiş metini vermeni istiyorum. Yaptığın değişiklikleri ve düzenlemeleri görmek istemiyorum. İşte transkript: \n\n---\n\n%s",
 		rawText,
 	)
 
 	req := &api.ChatRequest{
-		Model: "deepseek-coder:6.7b",
+		Model: "deepseek-r1:8b", // Kullandığınız modelin adı (örn: llama3)
 		Messages: []api.Message{
 			{Role: "user", Content: prompt},
 		},
@@ -54,6 +58,12 @@ func (c *ollamaClient) RefineTranscription(rawText string) (string, error) {
 	if fullResponse == "" {
 		return "", fmt.Errorf("Ollama'dan geçerli bir yanıt alınamadı")
 	}
-
+	closingTag := "</think>"
+	if separatorIndex := strings.Index(fullResponse, closingTag); separatorIndex != -1 {
+		// Eğer etiket varsa, ondan sonraki kısmı al
+		cleanedText := fullResponse[separatorIndex+len(closingTag):]
+		// Baştaki ve sondaki boşlukları temizle
+		return strings.TrimSpace(cleanedText), nil
+	}
 	return fullResponse, nil
 }

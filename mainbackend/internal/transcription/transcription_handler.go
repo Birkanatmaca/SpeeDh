@@ -3,7 +3,6 @@ package transcription
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -26,76 +25,43 @@ func NewTranscribeHandler(service ITranscriptionService) *TranscribeHandler {
 }
 
 func (h *TranscribeHandler) Transcribe(c *gin.Context) {
-	// --- MEVCUT KODUNUZ (Değişiklik yok) ---
 	userIDValue, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kullanıcı ID'si bulunamadı, bu rota korumalı olmalı"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kullanıcı kimliği bulunamadı"})
 		return
 	}
 	userID, ok := userIDValue.(uint)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Kullanıcı ID'si formatı hatalı"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Kullanıcı kimliği formatı geçersiz"})
 		return
 	}
 
-	file, err := c.FormFile("audio")
+	file, header, err := c.Request.FormFile("audio")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Ses dosyası bulunamadı: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ses dosyası alınamadı: " + err.Error()})
 		return
 	}
+	defer file.Close()
 
-	ext := filepath.Ext(file.Filename)
-	newFileName := fmt.Sprintf("%d-%d%s", userID, time.Now().UnixNano(), ext)
+	// Geçici bir dosya oluştur ve yolunu servise gönder
 	tempDir := "uploads"
 	os.MkdirAll(tempDir, os.ModePerm)
-	filePath := filepath.Join(tempDir, newFileName)
-	if err := c.SaveUploadedFile(file, filePath); err != nil {
+	originalFilePath := filepath.Join(tempDir, fmt.Sprintf("%d-%d-%s", userID, time.Now().UnixNano(), header.Filename))
+	if err := c.SaveUploadedFile(header, originalFilePath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Dosya kaydedilemedi: " + err.Error()})
 		return
 	}
-	// Orijinal dosyayı işlem bittiğinde silmek için defer ekliyoruz.
-	defer os.Remove(filePath)
-	log.Printf("Orijinal dosya geçici olarak kaydedildi: %s", filePath)
-	// --- MEVCUT KODUNUZ BİTTİ ---
 
-	// --- YENİ EKLENEN FFMPEG İLE SES İŞLEME ADIMI ---
-	cleanedFilePath := strings.TrimSuffix(filePath, ext) + "_cleaned.wav"
-	// Temizlenmiş dosyayı da işlem bittiğinde sil.
-	defer os.Remove(cleanedFilePath)
-
-	log.Printf("FFmpeg ile gürültü temizleme başlatılıyor: %s -> %s", filePath, cleanedFilePath)
-	cmd := exec.Command("ffmpeg", "-i", filePath, "-af", "afftdn", "-ar", "16000", "-ac", "1", cleanedFilePath)
-
-	output, err := cmd.CombinedOutput()
+	// --- TEK ÇAĞRI: Tüm iş akışını başlatmak için servisi çağır ---
+	transcription, err := h.service.CreateTranscription(userID, originalFilePath)
 	if err != nil {
-		log.Printf("FFmpeg hatası: %s", string(output))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ses dosyası işlenemedi (ffmpeg error)"})
-		return
-	}
-	log.Println("Gürültü temizleme tamamlandı.")
-	// --- YENİ ADIM BİTTİ ---
-
-	// --- DEĞİŞTİRİLEN KISIM ---
-	// Whisper'a orijinal dosya yerine TEMİZLENMİŞ dosyayı veriyoruz.
-	log.Printf("Whisper temizlenmiş dosya ile başlatılıyor: %s", cleanedFilePath)
-	transcribedText, err := runWhisperLocally(cleanedFilePath) // <--- Değişiklik burada
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Metne çevirme hatası: " + err.Error()})
-		return
-	}
-	// --- DEĞİŞİKLİK BİTTİ ---
-
-	// --- MEVCUT KODUNUZ (Değişiklik yok) ---
-	// Veritabanına orijinal dosyanın adını ve yolunu kaydediyoruz.
-	_, err = h.service.SaveTranscription(userID, strings.TrimSpace(transcribedText), file.Filename, filePath)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Transkript veritabanına kaydedilemedi: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":       "Dosya başarıyla metne dönüştürüldü ve kaydedildi.",
-		"transcription": strings.TrimSpace(transcribedText),
+		"message":       "İşlem başarıyla tamamlandı.",
+		"transcription": transcription.TranscriptionText,
 	})
 }
 

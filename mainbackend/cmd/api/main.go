@@ -1,15 +1,17 @@
+// mainbackend/cmd/api/main.go
 package main
 
 import (
 	"fmt"
-	"github.com/gin-contrib/cors"
 	"log"
 	"mainbackend/internal/auth"
-	"mainbackend/internal/platform/ai"
+	"mainbackend/internal/platform/ai" // ai paketini import ediyoruz
 	"mainbackend/internal/platform/database"
 	"mainbackend/internal/platform/email"
 	"mainbackend/internal/transcription"
+	"os"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -22,27 +24,31 @@ func main() {
 
 	db := database.ConnectDB()
 	mailer := email.NewGmailMailer()
+	aiClient := ai.NewOllamaClient() // YENİ: AI İstemcisini oluşturuyoruz
 
-	aiClient := ai.NewOllamaClient()
-
-	// Auth (Kimlik Doğrulama) servisleri
+	// Auth servisleri
 	userRepository := auth.NewUserRepository(db)
-	authService := auth.NewAuthService(userRepository, mailer, "a-very-secret-key")
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "a-very-secret-key" // Fallback
+	}
+	authService := auth.NewAuthService(userRepository, mailer, jwtSecret)
 	authHandler := auth.NewAuthHandler(authService)
 
-	// --- YENİ EKLENEN KISIM ---
-	// Transcription (Metne Dönüştürme) servisleri
+	// Transcription servisleri
 	transcriptionRepo := transcription.NewTranscriptionRepository(db)
+	// Servisi oluştururken artık aiClient'ı da veriyoruz
 	transcriptionService := transcription.NewTranscriptionService(transcriptionRepo, aiClient)
-	transcriptionHandler := transcription.NewTranscribeHandler(transcriptionService) // Handler'ı servisle başlat
-	// --- BİTİŞ ---
+	transcriptionHandler := transcription.NewTranscribeHandler(transcriptionService)
 
 	router := gin.Default()
 
+	// ... (CORS ve router kodunuzun geri kalanı aynı kalacak) ...
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://localhost:5173"}
+	config.AllowOrigins = []string{"http://localhost:5173", "http://127.0.0.1:5173"}
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
-	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"} // Authorization başlığına izin ver
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	config.AllowCredentials = true
 	router.Use(cors.New(config))
 
 	api := router.Group("/api/v1")
@@ -60,7 +66,6 @@ func main() {
 		protectedRoutes := api.Group("/")
 		protectedRoutes.Use(auth.AuthMiddleware(authService))
 		{
-			// Handler'ı doğrudan kullanmak yerine oluşturduğumuz handler örneğini kullanıyoruz
 			protectedRoutes.POST("/transcribe", transcriptionHandler.Transcribe)
 			protectedRoutes.GET("/transcripts", transcriptionHandler.GetTranscripts)
 			protectedRoutes.GET("/transcripts/:id/audio", transcriptionHandler.GetAudioFile)
@@ -70,6 +75,10 @@ func main() {
 		}
 	}
 
-	fmt.Println("Sunucu http://localhost:8080 adresinde başlatıldı. İstek bekleniyor...")
-	router.Run(":8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	fmt.Printf("Sunucu http://localhost:%s adresinde başlatıldı. İstek bekleniyor...\n", port)
+	router.Run(":" + port)
 }
