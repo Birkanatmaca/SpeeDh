@@ -3,15 +3,19 @@ package transcription
 import (
 	"errors"
 	"fmt"
+	"log"
 	"mainbackend/internal/model"
+	"mainbackend/internal/platform/ai"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // ITranscriptionService arayüzü, transkript ile ilgili iş mantığı operasyonlarını tanımlar.
 type ITranscriptionService interface {
+	CreateTranscription(userID int, originalFilePath string) (*model.Transcription, error) // <-- BU SATIRI EKLEYİN
 	SaveTranscription(userID uint, text, originalFilename, filepath string) (*model.Transcription, error)
 	GetTranscriptsByUserID(userID uint) ([]model.Transcription, error)
 	GetTranscriptByID(id uint) (*model.Transcription, error)
@@ -20,13 +24,18 @@ type ITranscriptionService interface {
 
 // transcriptionService, repository'yi kullanarak işlemleri gerçekleştirir.
 type transcriptionService struct {
-	repo ITranscriptionRepository
+	repo     ITranscriptionRepository
+	aiClient ai.IAIClient
 }
 
 // NewTranscriptionService, yeni bir servis örneği oluşturur.
-func NewTranscriptionService(repo ITranscriptionRepository) ITranscriptionService {
-	return &transcriptionService{repo: repo}
+func NewTranscriptionService(repo ITranscriptionRepository, aiClient ai.IAIClient) ITranscriptionService {
+	return &transcriptionService{
+		repo:     repo,
+		aiClient: aiClient,
+	}
 }
+
 func (s *transcriptionService) GetTranscriptsByUserID(userID uint) ([]model.Transcription, error) {
 	return s.repo.FindByUserID(userID)
 }
@@ -123,4 +132,66 @@ func (s *transcriptionService) ProcessAudioFile(originalFilePath string) (string
 	// Bu kısım sizin projenize göre düzenlenmelidir.
 	// Geçici olarak boş bir string ve nil hata döndürüyorum.
 	return "Transkripsiyon metni buraya gelecek", nil
+}
+
+func (s *transcriptionService) CreateTranscription(userID int, originalFilePath string) (*model.Transcription, error) {
+	defer cleanupFile(originalFilePath)
+
+	cleanedFilePath := strings.TrimSuffix(originalFilePath, filepath.Ext(originalFilePath)) + "_cleaned.wav"
+	defer cleanupFile(cleanedFilePath)
+
+	log.Printf("FFmpeg ile gürültü temizleme başlatılıyor: %s -> %s", originalFilePath, cleanedFilePath)
+	cmd := exec.Command("ffmpeg", "-i", originalFilePath, "-af", "afftdn", "-ar", "16000", "-ac", "1", cleanedFilePath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("FFmpeg hatası: %s", string(output))
+		return nil, fmt.Errorf("ses dosyası işlenemedi (ffmpeg error)")
+	}
+	log.Println("Gürültü temizleme tamamlandı.")
+
+	log.Printf("Whisper ile transkripsiyon başlatılıyor: %s", cleanedFilePath)
+	whisperCmd := exec.Command("whisper", cleanedFilePath, "--model", "base", "--language", "Turkish", "--output_format", "txt", "--output_dir", filepath.Dir(cleanedFilePath))
+	output, err = whisperCmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Whisper hatası: %s", string(output))
+		return nil, fmt.Errorf("transkripsiyon işlemi başarısız oldu (whisper error)")
+	}
+	log.Printf("Whisper çıktısı: %s", string(output))
+
+	transcriptFilePath := strings.TrimSuffix(cleanedFilePath, ".wav") + ".txt"
+	defer cleanupFile(transcriptFilePath)
+
+	contentBytes, err := os.ReadFile(transcriptFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("transkript dosyası okunamadı: %w", err)
+	}
+	transcriptText := string(contentBytes)
+	log.Println("Transkripsiyon tamamlandı.")
+
+	// --- DÜZELTİLEN KISIM ---
+	// Alan adları model dosyanızdaki 'Content' ve 'FilePath' ile eşleştirildi.
+	transcription := &model.Transcription{
+		UserID:           uint(userID),
+		OriginalFilename: transcriptText,   // <-- 'Text' değil, 'Content' olacak
+		AudioFilepath:    originalFilePath, // <-- 'AudioPath' değil, 'FilePath' olacak
+		CreatedAt:        time.Now(),
+	}
+
+	if err := s.repo.Create(transcription); err != nil {
+		return nil, fmt.Errorf("transkript veritabanına kaydedilemedi: %w", err)
+	}
+
+	return transcription, nil
+}
+
+// ... (dosyanın geri kalanı aynı) ...
+func cleanupFile(path string) {
+	err := os.Remove(path)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Printf("Uyarı: Geçici dosya silinemedi: %s, Hata: %v", path, err)
+		}
+	} else {
+		log.Printf("Geçici dosya silindi: %s", path)
+	}
 }

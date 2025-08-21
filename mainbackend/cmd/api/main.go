@@ -5,6 +5,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"log"
 	"mainbackend/internal/auth"
+	"mainbackend/internal/platform/ai"
 	"mainbackend/internal/platform/database"
 	"mainbackend/internal/platform/email"
 	"mainbackend/internal/transcription"
@@ -22,6 +23,8 @@ func main() {
 	db := database.ConnectDB()
 	mailer := email.NewGmailMailer()
 
+	aiClient := ai.NewOllamaClient()
+
 	// Auth (Kimlik Doğrulama) servisleri
 	userRepository := auth.NewUserRepository(db)
 	authService := auth.NewAuthService(userRepository, mailer, "a-very-secret-key")
@@ -30,7 +33,7 @@ func main() {
 	// --- YENİ EKLENEN KISIM ---
 	// Transcription (Metne Dönüştürme) servisleri
 	transcriptionRepo := transcription.NewTranscriptionRepository(db)
-	transcriptionService := transcription.NewTranscriptionService(transcriptionRepo)
+	transcriptionService := transcription.NewTranscriptionService(transcriptionRepo, aiClient)
 	transcriptionHandler := transcription.NewTranscribeHandler(transcriptionService) // Handler'ı servisle başlat
 	// --- BİTİŞ ---
 
